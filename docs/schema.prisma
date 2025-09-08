@@ -1,0 +1,157 @@
+// Tipos base para DataType (diferenciar primitivo vs catálogo)
+enum PrimitiveKind {
+  STRING
+  NUMBER
+  BOOLEAN
+  DATE
+  CATALOG
+}
+
+model User {
+  id             String           @id @default(cuid())
+  name           String
+  email          String           @unique
+  passwordHash   String           @map("password_hash")
+
+  records        Record[]
+  workspaceUsers WorkspaceUser[]
+
+  @@map("users")
+}
+
+model Workspace {
+  id             String           @id @default(cuid())
+  name           String
+
+  workspaceUsers WorkspaceUser[]
+  recordSchemas  RecordSchema[]
+  records        Record[]
+
+  @@map("workspaces")
+}
+
+model WorkspaceUser {
+  id          String    @id @default(cuid())
+  workspaceId String
+  userId      String
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+  @@map("workspace_users")
+}
+
+model RecordSchema {
+  id            String                  @id @default(cuid())
+  name          String
+  description   String?
+  workspaceId   String
+
+  workspace     Workspace               @relation(fields: [workspaceId], references: [id])
+  attributes    RecordSchemaAttribute[]
+  records       Record[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+  @@map("record_schemas")
+}
+
+model RecordSchemaAttribute {
+  id             String       @id @default(cuid())
+  name           String
+  isRequired     Boolean      @default(false)
+  allowMultiple  Boolean      @default(false)
+  recordSchemaId String
+  dataTypeId     String
+  catalogId      String?      // si dataType.kind = CATALOG, debe tener valor
+
+  recordSchema   RecordSchema @relation(fields: [recordSchemaId], references: [id])
+  dataType       DataType     @relation(fields: [dataTypeId], references: [id])
+  catalog        Catalog?     @relation(fields: [catalogId], references: [id])
+
+  // Muchas validaciones (join con payload)
+  validations    AttributeValidation[]
+
+  @@unique([recordSchemaId, name])
+  @@index([recordSchemaId])
+  @@index([dataTypeId])
+  @@index([catalogId])
+  @@map("record_schema_attributes")
+}
+
+model DataType {
+  id          String                 @id @default(cuid())
+  name        String                 @unique  // ej: "STRING", "NUMBER", ...
+  kind        PrimitiveKind
+
+  attributes  RecordSchemaAttribute[]
+
+  @@map("data_types")
+}
+
+model Catalog {
+  id          String            @id @default(cuid())
+  name        String            @unique
+
+  items       CatalogItem[]
+  attributes  RecordSchemaAttribute[]
+
+  @@map("catalogs")
+}
+
+model CatalogItem {
+  id        String  @id @default(cuid())
+  value     String
+  catalogId String
+
+  catalog   Catalog @relation(fields: [catalogId], references: [id])
+
+  @@unique([catalogId, value])
+  @@index([catalogId])
+  @@map("catalog_items")
+}
+
+model ValidationRule {
+  id           String                @id @default(cuid())
+  name         String                @unique // MIN_LENGTH, REGEX, BETWEEN, etc.
+  validations  AttributeValidation[]
+
+  @@map("validation_rules")
+}
+
+// Join con payload entre Attribute y ValidationRule
+model AttributeValidation {
+  id               String                 @id @default(cuid())
+  attributeId      String
+  validationRuleId String
+  validationValue  String
+  isNegated        Boolean                @default(false)
+
+  attribute        RecordSchemaAttribute  @relation(fields: [attributeId], references: [id])
+  rule             ValidationRule         @relation(fields: [validationRuleId], references: [id])
+
+  @@unique([attributeId, validationRuleId, validationValue, isNegated])
+  @@index([attributeId])
+  @@index([validationRuleId])
+  @@map("attribute_validations")
+}
+
+model Record {
+  id             String       @id @default(cuid())
+  data           Json
+  userId         String
+  workspaceId    String
+  recordSchemaId String
+
+  user           User         @relation(fields: [userId], references: [id])
+  workspace      Workspace    @relation(fields: [workspaceId], references: [id])
+  recordSchema   RecordSchema @relation(fields: [recordSchemaId], references: [id])
+
+  @@index([workspaceId])
+  @@index([recordSchemaId])
+  @@index([userId])
+  @@map("records")
+}
