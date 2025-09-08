@@ -1,4 +1,3 @@
-````markdown
 # Guía paso a paso: crear un recurso desde 0 (tomando **Users** como base)
 
 > Esta guía te lleva **desde cero** hasta tener un recurso REST completo en Spring Boot 3 (entidad, migración, repositorio, DTOs, mapper, servicio, controlador y **tests**). Usaremos el recurso **Users** del proyecto como ejemplo y patrón para que luego puedas replicarlo con cualquier otro recurso.
@@ -41,7 +40,6 @@
    DB_URL=jdbc:mysql://localhost:3306/data_collector_dev?createDatabaseIfNotExist=true&serverTimezone=UTC
    DB_user=root
    DB_PASS=tu_password
-````
 
 > El proyecto usa **spring-dotenv**: Spring leerá `.env` y activará el perfil indicado.
 
@@ -675,6 +673,3 @@ curl http://localhost:8080/users
 ---
 
 ¡Listo! Con este patrón (basado en **Users**) puedes crear cualquier recurso nuevo de forma consistente, con pruebas y migraciones desde el primer día.
-
-```
-```
