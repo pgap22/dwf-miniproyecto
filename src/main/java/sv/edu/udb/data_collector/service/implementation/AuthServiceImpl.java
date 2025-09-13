@@ -9,7 +9,7 @@ import sv.edu.udb.data_collector.repository.UserRepository;
 import sv.edu.udb.data_collector.security.hasher.PasswordHasher;
 import sv.edu.udb.data_collector.service.AuthService;
 import sv.edu.udb.data_collector.service.mapper.UserMapper;
-import sv.edu.udb.data_collector.security.jwt.JwtService;
+import sv.edu.udb.data_collector.security.token.TokenService;
 
 @Service
 @RequiredArgsConstructor
@@ -18,7 +18,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository repo;
     private final PasswordHasher passwordHasher;
     private final UserMapper userMapper;
-    private final JwtService jwtService;
+    private final TokenService tokenService;
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -26,11 +26,10 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new EntityNotFoundException("Credenciales inválidas"));
 
         if (!passwordHasher.matches(request.getPassword(), user.getPasswordHash())) {
-            // mismo mensaje para no filtrar si el email existe
             throw new IllegalArgumentException("Credenciales inválidas");
         }
 
-        String token = jwtService.generateToken(user.getId(), user.getEmail());
+        String token = tokenService.generateAccessToken(user.getId(), user.getEmail());
 
         return LoginResponse.builder()
                 .token(token)
