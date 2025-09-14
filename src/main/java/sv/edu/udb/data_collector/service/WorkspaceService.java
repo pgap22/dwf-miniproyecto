@@ -8,8 +8,8 @@ import java.util.List;
 
 public interface WorkspaceService {
     WorkspaceResponse create(WorkspaceCreateRequest request);
-    WorkspaceResponse get(Long id);
+    WorkspaceResponse get(String id);
     List<WorkspaceResponse> list();
-    WorkspaceResponse patch(Long id, WorkspaceUpdateRequest request);
-    void delete(Long id);
+    WorkspaceResponse patch(String id, WorkspaceUpdateRequest request);
+    void delete(String id);
 }
