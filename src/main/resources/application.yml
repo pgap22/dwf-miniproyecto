@@ -1,32 +1,25 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]   # carga .env automáticamente
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}   # prod por defecto
+    active: ${SPRING_PROFILES_ACTIVE:dev}     # por defecto dev
+
   application:
     name: data-collector
 
-  datasource:
-    url: ${DB_URL}     # p.ej: jdbc:mysql://localhost:3306/data_collector?useSSL=true&serverTimezone=UTC
-    username: ${DB_USER}
-    password: ${DB_PASS}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-
   jpa:
     hibernate:
-      ddl-auto: validate     # Flyway migra; Hibernate valida
+      ddl-auto: validate            # Flyway migra; Hibernate solo valida
     open-in-view: false
     properties:
       hibernate.format_sql: true
-    show-sql: false
+    show-sql: false                 # lo activamos en dev
 
   flyway:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: ${FLYWAY_BASELINE:false}
 
-logging.level.org.flywaydb: info
-
-security:
-  token:
-    jwt:
-      secret: ${JWT_SECRET_BASE64:dGhpc19pc19hX2xvbmdfc2VjcmV0X2tleV9iYXNlNjQ=}
-      expiration-minutes: 60
+logging:
+  level:
+    org.flywaydb: info

@@ -1,14 +1,14 @@
 spring:
   datasource:
-    url: ${DB_URL}     # p.ej: jdbc:mysql://host:3306/data_collector?useSSL=true&serverTimezone=UTC
-    username: ${DB_USER}
-    password: ${DB_PASS}
+    # Sugerencia: permite crear la DB en dev si no existe
+    url: ${DB_URL:jdbc:mysql://localhost:3306/data_collector?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USER:root}
+    password: ${DB_PASS:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
-    show-sql: false
+    show-sql: true
 
   flyway:
-    # Si algún día te conectas a una DB ya existente sin metadata de Flyway:
+    # normalmente no necesitas estas, solo si alguna vez conectas a una DB ya existente sin metadata
     baseline-on-migrate: ${FLYWAY_BASELINE:false}
-
