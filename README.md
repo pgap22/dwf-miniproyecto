@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS users (
 > **Perfiles**:
 >
 > * `application-dev.yml` apunta a **MySQL**.
-> * `application-test.yml` usa **H2** en memoria con Flyway habilitado.
+> * `application-test.yml` usa **MySQL** con otra base.
 > * `application.yml` define `ddl-auto: validate` (Hibernate **valida** contra migraciones).
 
 ---
@@ -835,7 +835,7 @@ curl http://localhost:8080/users
 
   * `pom.xml` → `maven-compiler-plugin` con `annotationProcessorPaths`.
   * IDE: habilitar *annotation processing*.
-* **Flyway + H2**: en `test` se usa `H2` con modo `MySQL` y Flyway habilitado; no mezcles `ddl-auto: update`. Mantén `validate`.
+* **Flyway**: en `test` se usa `MySQL` y Flyway habilitado;
 * **Contraseñas**: Nunca expongas `passwordHash` en responses. Hashea en el servicio (no en el mapper).
 * **Validación**: usa `@Valid` en controladores y `jakarta.validation` en DTOs.
 * **Errores 400/404**: `@Valid` genera 400; `EntityNotFoundException` mapea a 404 si configuras un `@ControllerAdvice` (opcional).
