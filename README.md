@@ -27,7 +27,7 @@
 
 - **Java 17+**
 - **Maven** (el repo trae `./mvnw`/`mvnw.cmd`)
-- **MySQL** para `dev` (H2 se usa en `test`)
+- **MySQL** para `dev` (en `test` se crea una bd con subfijo_test)
 - IDE con soporte de **annotation processing** (MapStruct + Lombok)
 
 ---
