@@ -23,3 +23,11 @@ spring:
 logging:
   level:
     org.flywaydb: info
+
+security:
+  token:
+    jwt:
+      # Usa una clave Base64 segura de >=32 bytes. EJEMPLO (cambia en prod):
+      secret: ${JWT_SECRET_BASE64:dGhpc19pc19hX2xvbmdfc2VjcmV0X2tleV9iYXNlNjQ=}
+      expiration-minutes: 60
+
