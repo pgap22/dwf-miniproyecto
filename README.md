@@ -314,212 +314,384 @@ public class UserController {
 > ```
 
 ---
+## Paso 8: Pruebas (Unitarias y Slice)
 
-## Paso 8: Tests (unitarios y de slice)
+> Todos los tests siguen el patrón **Arrange – Act – Assert**
+> para que el flujo sea claro y depurable.
 
-> El proyecto ya incluye **tests de ejemplo** para Users. Úsalos como plantilla al crear otros recursos.
+---
 
-### 8.1. Hasher (unit test puro)
+### 8.1 Hasher – *Unit Test Puro*
 
-`security/hasher/BCryptPasswordHasherTest.java`
+Archivo: `security/hasher/BCryptPasswordHasherTest.java`
 
 ```java
 class BCryptPasswordHasherTest {
-  @Test
-  void hash_and_matches() {
-    BCryptPasswordHasher hasher = new BCryptPasswordHasher();
-    String raw = "S3cret!";
-    String hash = hasher.hash(raw);
 
-    assertThat(hash).isNotBlank();
-    assertThat(hasher.matches(raw, hash)).isTrue();
-    assertThat(hasher.matches("wrong", hash)).isFalse();
-  }
-}
-```
+    @Test
+    @DisplayName("hash: genera hash y matches valida correctamente")
+    void hash_and_matches() {
+        // ---------- Arrange ----------
+        BCryptPasswordHasher hasher = new BCryptPasswordHasher();
+        String rawPassword   = "S3cret!";
+        String wrongPassword = "wrong";
 
-### 8.2. Mapper (unit test de MapStruct)
+        // ---------- Act ----------
+        String hashed = hasher.hash(rawPassword);
+        boolean matchesCorrect = hasher.matches(rawPassword, hashed);
+        boolean matchesWrong   = hasher.matches(wrongPassword, hashed);
 
-`service/mapper/UserMapperTest.java`
-
-```java
-class UserMapperTest {
-  private final UserMapper mapper = Mappers.getMapper(UserMapper.class);
-
-  @Test
-  void toUser_maps_basic_fields_and_password_to_hash_field() {
-    UserRequest req = UserRequest.builder()
-        .name("Bart").email("bart@pukis.com").password("123").build();
-
-    User u = mapper.toUser(req);
-
-    assertThat(u.getName()).isEqualTo("Bart");
-    assertThat(u.getEmail()).isEqualTo("bart@pukis.com");
-    // aquí va el raw password (luego el servicio lo hashea)
-    assertThat(u.getPasswordHash()).isEqualTo("123");
-  }
-
-  @Test
-  void toUserResponse_maps_fields() {
-    User u = new User();
-    u.setId("1"); u.setName("Bart"); u.setEmail("bart@pukis.com");
-    UserResponse resp = mapper.toUserResponse(u);
-    assertThat(resp.getId()).isEqualTo("1");
-    assertThat(resp.getName()).isEqualTo("Bart");
-    assertThat(resp.getEmail()).isEqualTo("bart@pukis.com");
-  }
-}
-```
-
-### 8.3. Servicio (Mockito)
-
-`service/UserServiceImplTest.java`
-
-```java
-class UserServiceImplTest {
-  private UserRepository repo;
-  private PasswordHasher hasher;
-  private UserMapper mapper;
-  private UserServiceImpl service;
-
-  @BeforeEach
-  void setup() {
-    repo = mock(UserRepository.class);
-    hasher = mock(PasswordHasher.class);
-    mapper = mock(UserMapper.class);
-    service = new UserServiceImpl(repo, mapper, hasher);
-  }
-
-  @Test
-  void create_hashes_password_and_returns_response() {
-    UserRequest req = UserRequest.builder()
-        .name("Bart").email("bart@pukis.com").password("123").build();
-
-    User entity = new User();
-    when(mapper.toUser(req)).thenReturn(entity);
-    when(hasher.hash("123")).thenReturn("HASHED");
-    when(repo.save(entity)).thenAnswer(inv -> {
-      entity.setId("uuid-1");
-      entity.setPasswordHash("HASHED");
-      return entity;
-    });
-    when(mapper.toUserResponse(entity))
-      .thenReturn(new UserResponse("uuid-1","Bart","bart@pukis.com"));
-
-    UserResponse resp = service.create(req);
-
-    ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-    verify(repo).save(captor.capture());
-    assertThat(captor.getValue().getPasswordHash()).isEqualTo("HASHED");
-    assertThat(resp.getId()).isEqualTo("uuid-1");
-  }
-
-  @Test
-  void findById_when_not_found_throws() {
-    when(repo.findById("x")).thenReturn(Optional.empty());
-    assertThrows(EntityNotFoundException.class, () -> service.findById("x"));
-  }
-
-  @Test
-  void list_maps_all() {
-    User u = new User();
-    u.setId("1"); u.setName("A"); u.setEmail("a@a.com"); u.setPasswordHash("x");
-    when(repo.findAll()).thenReturn(List.of(u));
-    when(mapper.toUserResponse(u)).thenReturn(new UserResponse("1","A","a@a.com"));
-
-    var list = service.list();
-    assertThat(list).hasSize(1);
-    assertThat(list.get(0).getEmail()).isEqualTo("a@a.com");
-  }
-}
-```
-
-### 8.4. Repositorio (DataJpaTest + H2 + Flyway)
-
-`repository/UserRepositoryTest.java`
-
-```java
-@DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
-class UserRepositoryTest {
-  @Autowired UserRepository userRepository;
-
-  @Test
-  void findByEmail_and_exists() {
-    User u = User.builder()
-        .name("Bart")
-        .email("bart@pukis.com")
-        // dummy bcrypt (len=60)
-        .passwordHash("$2a$10$abcdefghijABCDEFGHIJabcdefghijABCDEFGHIJabcdefghijAB")
-        .build();
-
-    u = userRepository.save(u);
-    assertThat(u.getId()).isNotBlank();
-
-    Optional<User> byEmail = userRepository.findByEmail("bart@pukis.com");
-    assertThat(byEmail).isPresent();
-    assertThat(userRepository.existsByEmail("bart@pukis.com")).isTrue();
-    assertThat(userRepository.existsByEmail("no@no.com")).isFalse();
-  }
-}
-```
-
-> **Por qué funciona con H2**: `application-test.yml` configura H2 y habilita Flyway para recrear el esquema a partir de tus migraciones.
-
-### 8.5. Controlador (WebMvcTest + MockMvc)
-
-`controller/UserControllerTest.java`
-
-```java
-@WebMvcTest(UserController.class)
-@AutoConfigureMockMvc(addFilters = false) // desactiva filtros de Security
-class UserControllerTest {
-  @Autowired private MockMvc mvc;
-  @MockBean private UserService userService;
-
-  @Test
-  void create_returns_200_and_body() throws Exception {
-    when(userService.create(any(UserRequest.class)))
-      .thenReturn(new UserResponse("1","Bart","bart@pukis.com"));
-
-    String json = """
-      {"name":"Bart","email":"bart@pukis.com","password":"123"}
-    """;
-
-    mvc.perform(post("/users")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(json))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.id").value("1"))
-      .andExpect(jsonPath("$.email").value("bart@pukis.com"));
-  }
-
-  @Test
-  void get_by_id_ok() throws Exception {
-    when(userService.findById("1"))
-      .thenReturn(new UserResponse("1","Bart","bart@pukis.com"));
-
-    mvc.perform(get("/users/1"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$.name").value("Bart"));
-  }
-
-  @Test
-  void list_ok() throws Exception {
-    when(userService.list()).thenReturn(List.of(
-      new UserResponse("1","A","a@a.com"),
-      new UserResponse("2","B","b@b.com")
-    ));
-
-    mvc.perform(get("/users"))
-      .andExpect(status().isOk())
-      .andExpect(jsonPath("$[0].email").value("a@a.com"))
-      .andExpect(jsonPath("$[1].email").value("b@b.com"));
-  }
+        // ---------- Assert ----------
+        assertThat(hashed).as("Hash no debe ser nulo ni vacío").isNotBlank();
+        assertThat(matchesCorrect).as("Debe coincidir con la contraseña original").isTrue();
+        assertThat(matchesWrong).as("No debe coincidir con una contraseña incorrecta").isFalse();
+    }
 }
 ```
 
 ---
+
+### 8.2 Mapper – *Unit Test con MapStruct*
+
+Archivo: `service/mapper/UserMapperTest.java`
+
+```java
+class UserMapperTest {
+
+    private final UserMapper mapper = Mappers.getMapper(UserMapper.class);
+
+    @Test
+    @DisplayName("toUser: mapea campos básicos y password -> passwordHash")
+    void toUser_maps_basic_fields_and_password_to_hash_field() {
+        // ---------- Arrange ----------
+        String givenName = "Bart";
+        String givenEmail = "bart@pukis.com";
+        String givenPassword = "123";
+
+        UserRequest request = UserRequest.builder()
+                .name(givenName)
+                .email(givenEmail)
+                .password(givenPassword)
+                .build();
+
+        // ---------- Act ----------
+        User mappedUser = mapper.toUser(request);
+
+        // ---------- Assert ----------
+        assertThat(mappedUser.getId()).as("ID debe ser nulo al mapear").isNull();
+        assertThat(mappedUser.getName()).isEqualTo(givenName);
+        assertThat(mappedUser.getEmail()).isEqualTo(givenEmail);
+        assertThat(mappedUser.getPasswordHash()).isEqualTo(givenPassword);
+    }
+
+    @Test
+    @DisplayName("toUserResponse: mapea campos de dominio a DTO")
+    void toUserResponse_maps_fields() {
+        // ---------- Arrange ----------
+        String userId = "1";
+        String userName = "Bart";
+        String userEmail = "bart@pukis.com";
+        String userHash = "HASH";
+
+        User domainUser = new User();
+        domainUser.setId(userId);
+        domainUser.setName(userName);
+        domainUser.setEmail(userEmail);
+        domainUser.setPasswordHash(userHash);
+
+        // ---------- Act ----------
+        UserResponse response = mapper.toUserResponse(domainUser);
+
+        // ---------- Assert ----------
+        assertThat(response.getId()).isEqualTo(userId);
+        assertThat(response.getName()).isEqualTo(userName);
+        assertThat(response.getEmail()).isEqualTo(userEmail);
+    }
+}
+```
+
+---
+
+### 8.3 Servicio – *Unit Test con Mockito*
+
+Archivo: `service/UserServiceImplTest.java`
+
+```java
+class UserServiceImplTest {
+
+    // ---------- Constantes GIVEN / EXPECTED ----------
+    private static final String GIVEN_NAME = "Bart";
+    private static final String GIVEN_EMAIL = "bart@pukis.com";
+    private static final String GIVEN_PASSWORD = "123";
+    private static final String EXPECTED_HASH = "HASHED";
+    private static final String EXPECTED_ID = "uuid-1";
+    private static final String NOT_FOUND_ID = "x";
+
+    private UserRepository repo;
+    private PasswordHasher hasher;
+    private UserMapper mapper;
+    private UserServiceImpl service;
+
+    @BeforeEach
+    void setup() {
+        repo = mock(UserRepository.class);
+        hasher = mock(PasswordHasher.class);
+        mapper = mock(UserMapper.class);
+        service = new UserServiceImpl(repo, mapper, hasher);
+    }
+
+    @Test
+    @DisplayName("create: hashea password, guarda y retorna respuesta mapeada")
+    void create_hashes_password_and_returns_response() {
+        // ---------- Arrange ----------
+        UserRequest request = UserRequest.builder()
+                .name(GIVEN_NAME)
+                .email(GIVEN_EMAIL)
+                .password(GIVEN_PASSWORD)
+                .build();
+
+        User mappedEntity = new User();
+        when(mapper.toUser(request)).thenReturn(mappedEntity);
+        when(hasher.hash(GIVEN_PASSWORD)).thenReturn(EXPECTED_HASH);
+        when(repo.save(mappedEntity)).thenAnswer(inv -> {
+            mappedEntity.setId(EXPECTED_ID);
+            mappedEntity.setPasswordHash(EXPECTED_HASH);
+            mappedEntity.setName(GIVEN_NAME);
+            mappedEntity.setEmail(GIVEN_EMAIL);
+            return mappedEntity;
+        });
+        UserResponse expectedResponse = new UserResponse(EXPECTED_ID, GIVEN_NAME, GIVEN_EMAIL);
+        when(mapper.toUserResponse(mappedEntity)).thenReturn(expectedResponse);
+
+        // ---------- Act ----------
+        UserResponse actualResponse = service.create(request);
+
+        // ---------- Assert ----------
+        ArgumentCaptor<User> savedCaptor = ArgumentCaptor.forClass(User.class);
+        verify(repo).save(savedCaptor.capture());
+        User saved = savedCaptor.getValue();
+        assertThat(saved.getPasswordHash()).isEqualTo(EXPECTED_HASH);
+        assertThat(actualResponse.getId()).isEqualTo(EXPECTED_ID);
+        assertThat(actualResponse.getName()).isEqualTo(GIVEN_NAME);
+        assertThat(actualResponse.getEmail()).isEqualTo(GIVEN_EMAIL);
+    }
+
+    @Test
+    @DisplayName("findById: lanza EntityNotFound cuando no existe")
+    void findById_when_not_found_throws() {
+        // ---------- Arrange ----------
+        when(repo.findById(NOT_FOUND_ID)).thenReturn(Optional.empty());
+
+        // ---------- Act + Assert ----------
+        assertThrows(jakarta.persistence.EntityNotFoundException.class,
+                () -> service.findById(NOT_FOUND_ID));
+        verify(repo).findById(NOT_FOUND_ID);
+        verifyNoMoreInteractions(repo);
+    }
+
+    @Test
+    @DisplayName("list: devuelve todos mapeados a UserResponse")
+    void list_maps_all() {
+        // ---------- Arrange ----------
+        User stored = new User();
+        stored.setId("1");
+        stored.setName("A");
+        stored.setEmail("a@a.com");
+        stored.setPasswordHash("x");
+
+        when(repo.findAll()).thenReturn(List.of(stored));
+        UserResponse mapped = new UserResponse("1", "A", "a@a.com");
+        when(mapper.toUserResponse(stored)).thenReturn(mapped);
+
+        // ---------- Act ----------
+        List<UserResponse> result = service.list();
+
+        // ---------- Assert ----------
+        assertThat(result).hasSize(1);
+        UserResponse first = result.get(0);
+        assertThat(first.getId()).isEqualTo("1");
+        assertThat(first.getName()).isEqualTo("A");
+        assertThat(first.getEmail()).isEqualTo("a@a.com");
+
+        verify(repo).findAll();
+        verify(mapper).toUserResponse(stored);
+        verifyNoMoreInteractions(repo, mapper);
+    }
+}
+```
+
+---
+
+### 8.4 Controlador – *Slice Test con WebMvcTest + MockMvc*
+
+Archivo: `controller/UserControllerTest.java`
+
+```java
+@WebMvcTest(
+        controllers = UserController.class,
+        excludeAutoConfiguration = {
+                SecurityAutoConfiguration.class,
+                SecurityFilterAutoConfiguration.class,
+                OAuth2ResourceServerAutoConfiguration.class
+        },
+        excludeFilters = @ComponentScan.Filter(
+                type = FilterType.ASSIGNABLE_TYPE,
+                classes = { SecurityConfig.class, JwtAuthenticationFilter.class }
+        )
+)
+@Import(RestExceptionHandler.class)
+@AutoConfigureMockMvc(addFilters = false)
+class UserControllerTest {
+
+    // ---------- GIVEN / EXPECTED ----------
+    private static final String USER_ID_1 = "1";
+    private static final String USER_ID_404 = "999";
+    private static final String USER_NAME_BART = "Bart";
+    private static final String EMAIL_BART = "bart@pukis.com";
+
+    private static final int HTTP_OK = 200;
+    private static final int HTTP_BAD_REQUEST = 400;
+    private static final int HTTP_NOT_FOUND = 404;
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    @Autowired
+    MockMvc mvc;
+
+    @MockBean
+    UserService userService;
+
+    @Test
+    @DisplayName("GET /users/{id} → 200 y body esperado")
+    void get_by_id_ok() throws Exception {
+        // ---------- Arrange ----------
+        UserResponse expected = new UserResponse(USER_ID_1, USER_NAME_BART, EMAIL_BART);
+        when(userService.findById(USER_ID_1)).thenReturn(expected);
+
+        // ---------- Act ----------
+        var result = mvc.perform(get("/users/{id}", USER_ID_1)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andReturn();
+
+        // ---------- Assert ----------
+        int status = result.getResponse().getStatus();
+        String body = result.getResponse().getContentAsString();
+        assertThat(status).isEqualTo(HTTP_OK);
+        UserResponse actual = MAPPER.readValue(body, UserResponse.class);
+        assertThat(actual.getId()).isEqualTo(USER_ID_1);
+        assertThat(actual.getName()).isEqualTo(USER_NAME_BART);
+        assertThat(actual.getEmail()).isEqualTo(EMAIL_BART);
+    }
+
+    @Test
+    @DisplayName("GET /users → 200 y lista")
+    void list_ok() throws Exception {
+        // ---------- Arrange ----------
+        List<UserResponse> expected = List.of(
+                new UserResponse("1", "A", "a@a.com"),
+                new UserResponse("2", "B", "b@b.com")
+        );
+        when(userService.list()).thenReturn(expected);
+
+        // ---------- Act ----------
+        var result = mvc.perform(get("/users").accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andReturn();
+
+        // ---------- Assert ----------
+        int status = result.getResponse().getStatus();
+        String body = result.getResponse().getContentAsString();
+        assertThat(status).isEqualTo(HTTP_OK);
+        List<UserResponse> actual = MAPPER.readValue(body,
+                new TypeReference<List<UserResponse>>() {});
+        assertThat(actual).hasSize(2);
+        assertThat(actual.get(0).getEmail()).isEqualTo("a@a.com");
+        assertThat(actual.get(1).getEmail()).isEqualTo("b@b.com");
+    }
+
+    @Test
+    @DisplayName("POST /users → 200 y body creado")
+    void create_returns_200_and_body() throws Exception {
+        // ---------- Arrange ----------
+        UserResponse expected = new UserResponse(USER_ID_1, USER_NAME_BART, EMAIL_BART);
+        when(userService.create(any(UserRequest.class))).thenReturn(expected);
+
+        String payload = """
+            {"name":"Bart","email":"bart@pukis.com","password":"123"}
+        """;
+
+        // ---------- Act ----------
+        var result = mvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andReturn();
+
+        // ---------- Assert ----------
+        int status = result.getResponse().getStatus();
+        String body = result.getResponse().getContentAsString();
+        assertThat(status).isEqualTo(HTTP_OK);
+        UserResponse actual = MAPPER.readValue(body, UserResponse.class);
+        assertThat(actual.getId()).isEqualTo(USER_ID_1);
+        assertThat(actual.getEmail()).isEqualTo(EMAIL_BART);
+    }
+
+    @Test
+    @DisplayName("POST /users → 400 cuando la validación falla")
+    void create_400_validation() throws Exception {
+        // ---------- Arrange ----------
+        String invalid = """
+            {"name":"","email":"mal","password":""}
+        """;
+
+        // ---------- Act ----------
+        var result = mvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalid)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andReturn();
+
+        // ---------- Assert ----------
+        int status = result.getResponse().getStatus();
+        String body = result.getResponse().getContentAsString();
+        assertThat(status).isEqualTo(HTTP_BAD_REQUEST);
+        assertThat(body).contains("ViolationFieldError");
+        assertThat(body).contains("email");
+    }
+
+    @Test
+    @DisplayName("GET /users/{id} → 404 cuando no existe")
+    void get_by_id_404() throws Exception {
+        // ---------- Arrange ----------
+        when(userService.findById(USER_ID_404))
+                .thenThrow(new EntityNotFoundException("not found"));
+
+        // ---------- Act ----------
+        var result = mvc.perform(get("/users/{id}", USER_ID_404)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andReturn();
+
+        // ---------- Assert ----------
+        int status = result.getResponse().getStatus();
+        String body = result.getResponse().getContentAsString();
+        assertThat(status).isEqualTo(HTTP_NOT_FOUND);
+        assertThat(body).contains("not found");
+    }
+}
+```
+
+---
+
+### Recomendaciones finales
+
+* Usa siempre **`@DisplayName` descriptivos**, que aparezcan tal cual en los reportes de JUnit.
+* Mantén la estructura **Arrange – Act – Assert** para claridad y facilidad de depuración.
+* Los *slice tests* (`@WebMvcTest`, `@DataJpaTest`) aíslan cada capa y ejecutan rápido.
+* Para pruebas de integración completas, combina `@SpringBootTest` con un MySQL efímero o Testcontainers.
 
 ## Probar los endpoints (curl)
 
