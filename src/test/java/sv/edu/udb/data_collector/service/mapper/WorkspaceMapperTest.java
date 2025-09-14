@@ -13,9 +13,7 @@ class WorkspaceMapperTest {
     @Test
     void toResponse_shouldMapAllFields() {
         Workspace w = Workspace.builder()
-                .id(10L)
                 .name("Analytics")
-                .description("Desc")
                 .build();
 
         WorkspaceResponse r = mapper.toResponse(w);
@@ -23,7 +21,6 @@ class WorkspaceMapperTest {
         assertNotNull(r);
         assertEquals(10L, r.getId());
         assertEquals("Analytics", r.getName());
-        assertEquals("Desc", r.getDescription());
     }
 
     @Test

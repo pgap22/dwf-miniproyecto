@@ -33,18 +33,18 @@ public class WorkspaceController {
     }
 
     @GetMapping("/{id}")
-    public WorkspaceResponse get(@PathVariable Long id) {
+    public WorkspaceResponse get(@PathVariable String id) {
         return service.get(id);
     }
 
     @PatchMapping("/{id}")
-    public WorkspaceResponse patch(@PathVariable Long id,
+    public WorkspaceResponse patch(@PathVariable String id,
                                    @Valid @RequestBody WorkspaceUpdateRequest request) {
         return service.patch(id, request);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable String id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }
