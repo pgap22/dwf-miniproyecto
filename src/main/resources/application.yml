@@ -1,25 +1,32 @@
 spring:
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE}
+    active: ${SPRING_PROFILES_ACTIVE:dev}   # prod por defecto
   application:
     name: data-collector
 
+  datasource:
+    url: ${DB_URL}     # p.ej: jdbc:mysql://localhost:3306/data_collector?useSSL=true&serverTimezone=UTC
+    username: ${DB_USER}
+    password: ${DB_PASS}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
   jpa:
     hibernate:
-      ddl-auto: validate   # Flyway manda; Hibernate solo valida el esquema
+      ddl-auto: validate     # Flyway migra; Hibernate valida
     open-in-view: false
     properties:
-      hibernate:
-        format_sql: true
+      hibernate.format_sql: true
+    show-sql: false
 
   flyway:
     enabled: true
-    locations: classpath:db/migration   # carpeta de migraciones
-    baseline-on-migrate: false          # ponlo true SOLO si adoptas una DB ya existente
+    locations: classpath:db/migration
+    baseline-on-migrate: ${FLYWAY_BASELINE:false}
+
+logging.level.org.flywaydb: info
 
 security:
   token:
     jwt:
-      # Usa una clave Base64 segura de >=32 bytes. EJEMPLO (cambia en prod):
       secret: ${JWT_SECRET_BASE64:dGhpc19pc19hX2xvbmdfc2VjcmV0X2tleV9iYXNlNjQ=}
       expiration-minutes: 60
