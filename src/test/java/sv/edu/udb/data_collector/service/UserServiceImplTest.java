@@ -1,6 +1,7 @@
 package sv.edu.udb.data_collector.service;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import sv.edu.udb.data_collector.controller.request.UserRequest;
@@ -20,6 +21,16 @@ import static org.mockito.Mockito.*;
 
 class UserServiceImplTest {
 
+    // ---------- Constantes GIVEN / EXPECTED ----------
+    private static final String GIVEN_NAME = "Bart";
+    private static final String GIVEN_EMAIL = "bart@pukis.com";
+    private static final String GIVEN_PASSWORD = "123";
+    private static final String EXPECTED_HASH = "HASHED";
+    private static final String EXPECTED_ID = "uuid-1";
+
+    private static final String NOT_FOUND_ID = "x";
+
+    // ---------- Mocks & SUT ----------
     private UserRepository repo;
     private PasswordHasher hasher;
     private UserMapper mapper;
@@ -34,48 +45,87 @@ class UserServiceImplTest {
     }
 
     @Test
+    @DisplayName("create: hashea password, guarda y retorna respuesta mapeada")
     void create_hashes_password_and_returns_response() {
-        UserRequest req = UserRequest.builder()
-                .name("Bart")
-                .email("bart@pukis.com")
-                .password("123")
+        // ---------- Arrange ----------
+        UserRequest request = UserRequest.builder()
+                .name(GIVEN_NAME)
+                .email(GIVEN_EMAIL)
+                .password(GIVEN_PASSWORD)
                 .build();
 
-        User entity = new User();
-        when(mapper.toUser(req)).thenReturn(entity);
-        when(hasher.hash("123")).thenReturn("HASHED");
-        when(repo.save(entity)).thenAnswer(inv -> {
-            entity.setId("uuid-1");
-            entity.setPasswordHash("HASHED");
-            return entity;
+        User mappedEntity = new User(); // resultado de mapper.toUser(request)
+        when(mapper.toUser(request)).thenReturn(mappedEntity);
+
+        when(hasher.hash(GIVEN_PASSWORD)).thenReturn(EXPECTED_HASH);
+
+        when(repo.save(mappedEntity)).thenAnswer(inv -> {
+            // simulamos persistencia
+            mappedEntity.setId(EXPECTED_ID);
+            mappedEntity.setPasswordHash(EXPECTED_HASH);
+            mappedEntity.setName(GIVEN_NAME);
+            mappedEntity.setEmail(GIVEN_EMAIL);
+            return mappedEntity;
         });
-        when(mapper.toUserResponse(entity)).thenReturn(new UserResponse("uuid-1","Bart","bart@pukis.com"));
 
-        UserResponse resp = service.create(req);
+        UserResponse expectedResponse = new UserResponse(EXPECTED_ID, GIVEN_NAME, GIVEN_EMAIL);
+        when(mapper.toUserResponse(mappedEntity)).thenReturn(expectedResponse);
 
-        // capturar lo que se intentó guardar
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        verify(repo).save(captor.capture());
-        assertThat(captor.getValue().getPasswordHash()).isEqualTo("HASHED");
-        assertThat(resp.getId()).isEqualTo("uuid-1");
+        // ---------- Act ----------
+        UserResponse actualResponse = service.create(request); // <- breakpoint útil
+
+        // ---------- Assert ----------
+        // Captura del argumento con el que se intentó guardar
+        ArgumentCaptor<User> savedCaptor = ArgumentCaptor.forClass(User.class);
+        verify(repo).save(savedCaptor.capture());
+        User saved = savedCaptor.getValue();                 // <- breakpoint útil
+
+        assertThat(saved.getPasswordHash()).isEqualTo(EXPECTED_HASH);
+        assertThat(actualResponse.getId()).isEqualTo(EXPECTED_ID);
+        assertThat(actualResponse.getName()).isEqualTo(GIVEN_NAME);
+        assertThat(actualResponse.getEmail()).isEqualTo(GIVEN_EMAIL);
     }
 
     @Test
+    @DisplayName("findById: lanza EntityNotFound cuando no existe")
     void findById_when_not_found_throws() {
-        when(repo.findById("x")).thenReturn(Optional.empty());
-        assertThrows(jakarta.persistence.EntityNotFoundException.class, () -> service.findById("x"));
+        // ---------- Arrange ----------
+        when(repo.findById(NOT_FOUND_ID)).thenReturn(Optional.empty());
+
+        // ---------- Act + Assert ----------
+        assertThrows(jakarta.persistence.EntityNotFoundException.class,
+                () -> service.findById(NOT_FOUND_ID));
+        verify(repo).findById(NOT_FOUND_ID);
+        verifyNoMoreInteractions(repo);
     }
 
     @Test
+    @DisplayName("list: devuelve todos mapeados a UserResponse")
     void list_maps_all() {
-        User u = new User();
-        u.setId("1"); u.setName("A"); u.setEmail("a@a.com"); u.setPasswordHash("x");
-        when(repo.findAll()).thenReturn(List.of(u));
-        when(mapper.toUserResponse(u)).thenReturn(new UserResponse("1","A","a@a.com"));
+        // ---------- Arrange ----------
+        User stored = new User();
+        stored.setId("1");
+        stored.setName("A");
+        stored.setEmail("a@a.com");
+        stored.setPasswordHash("x");
 
-        var list = service.list();
+        when(repo.findAll()).thenReturn(List.of(stored));
 
-        assertThat(list).hasSize(1);
-        assertThat(list.get(0).getEmail()).isEqualTo("a@a.com");
+        UserResponse mapped = new UserResponse("1", "A", "a@a.com");
+        when(mapper.toUserResponse(stored)).thenReturn(mapped);
+
+        // ---------- Act ----------
+        List<UserResponse> result = service.list();          // <- breakpoint útil
+
+        // ---------- Assert ----------
+        assertThat(result).hasSize(1);
+        UserResponse first = result.get(0);
+        assertThat(first.getId()).isEqualTo("1");
+        assertThat(first.getName()).isEqualTo("A");
+        assertThat(first.getEmail()).isEqualTo("a@a.com");
+
+        verify(repo).findAll();
+        verify(mapper).toUserResponse(stored);
+        verifyNoMoreInteractions(repo, mapper);
     }
 }
