@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    # Sin createDatabaseIfNotExist en prod (DB creada por IaC/DBA)
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: ${FLYWAY_BASELINE:false}
