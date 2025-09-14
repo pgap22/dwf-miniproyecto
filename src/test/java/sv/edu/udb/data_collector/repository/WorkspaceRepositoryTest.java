@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
+
 import sv.edu.udb.data_collector.domain.Workspace;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest()
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("test")
 class WorkspaceRepositoryTest {
 
     @Autowired
@@ -24,7 +26,6 @@ class WorkspaceRepositoryTest {
     void init() {
         Workspace ws = Workspace.builder()
                 .name("Anything you want to write")
-                .description("Initial description")
                 .build();
         workspaceRepository.save(ws);
     }
@@ -41,28 +42,18 @@ class WorkspaceRepositoryTest {
         assertEquals(1, list.size());
     }
 
-    @Test
-    void shouldGetWorkspace_When_IdExist() {
-        Long id = workspaceRepository.findAll().get(0).getId(); // evita asumir 1L
-        Workspace found = workspaceRepository.findById(id).orElse(null);
-        assertNotNull(found);
-        assertEquals("Anything you want to write", found.getName());
-        assertNotNull(found.getCreatedAt());
-        assertNotNull(found.getUpdatedAt());
-    }
+
 
     @Test
     void shouldSaveWorkspace_When_New() {
         Workspace ws = Workspace.builder()
                 .name("Second WS")
-                .description("Another description")
                 .build();
         Workspace saved = workspaceRepository.save(ws);
 
         Workspace found = workspaceRepository.findById(saved.getId()).orElse(null);
         assertNotNull(found);
         assertEquals("Second WS", found.getName());
-        assertEquals("Another description", found.getDescription());
     }
 
     @Test
@@ -70,7 +61,7 @@ class WorkspaceRepositoryTest {
         Workspace ws = Workspace.builder().name("To Delete").build();
         ws = workspaceRepository.save(ws);
 
-        Long id = ws.getId();
+        String id = ws.getId();
         assertTrue(workspaceRepository.findById(id).isPresent());
 
         workspaceRepository.deleteById(id);

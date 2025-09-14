@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.Instant;
 
+import org.hibernate.annotations.UuidGenerator;
+
 @Entity
 @Table(name = "workspaces")
 @Getter @Setter
@@ -12,19 +14,17 @@ import java.time.Instant;
 public class Workspace {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @UuidGenerator // Genera UUIDs automáticamente (si prefieres String “cuid”, mira la nota abajo)
+    @Column(nullable = false, updatable = false, length = 36)
+    private String id;
 
     @Column(nullable = false, unique = true, length = 120)
     private String name;
 
-    @Column(length = 500)
-    private String description;
-
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false, updatable = false, name = "createdAt")
     private Instant createdAt;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "updatedAt")
     private Instant updatedAt;
 
     @PrePersist

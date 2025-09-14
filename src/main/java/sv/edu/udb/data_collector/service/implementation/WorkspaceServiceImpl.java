@@ -30,7 +30,6 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         }
         Workspace ws = Workspace.builder()
                 .name(request.getName())
-                .description(request.getDescription())
                 .build();
         ws = repository.save(ws);
         return mapper.toResponse(ws);
@@ -38,7 +37,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
     @Override
     @Transactional(readOnly = true)
-    public WorkspaceResponse get(Long id) {
+    public WorkspaceResponse get(String id) {
         Workspace ws = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace not found"));
         return mapper.toResponse(ws);
@@ -51,7 +50,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     }
 
     @Override
-    public WorkspaceResponse patch(Long id, WorkspaceUpdateRequest request) {
+    public WorkspaceResponse patch(String id, WorkspaceUpdateRequest request) {
         Workspace ws = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace not found"));
 
@@ -62,15 +61,12 @@ public class WorkspaceServiceImpl implements WorkspaceService {
             }
             ws.setName(request.getName());
         }
-        if (request.getDescription() != null) {
-            ws.setDescription(request.getDescription());
-        }
         // updatedAt se actualiza con @PreUpdate
         return mapper.toResponse(ws);
     }
 
     @Override
-    public void delete(Long id) {
+    public void delete(String id) {
         if (!repository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace not found");
         }

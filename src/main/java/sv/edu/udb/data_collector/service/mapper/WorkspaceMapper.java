@@ -12,7 +12,6 @@ public class WorkspaceMapper {
         return WorkspaceResponse.builder()
                 .id(ws.getId())
                 .name(ws.getName())
-                .description(ws.getDescription())
                 .createdAt(ws.getCreatedAt())
                 .updatedAt(ws.getUpdatedAt())
                 .build();
