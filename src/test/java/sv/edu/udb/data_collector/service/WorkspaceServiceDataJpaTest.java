@@ -3,13 +3,14 @@ package sv.edu.udb.data_collector.service;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.server.ResponseStatusException;
 import sv.edu.udb.data_collector.controller.request.WorkspaceCreateRequest;
-// import sv.edu.udb.data_collector.controller.request.WorkspaceUpdateRequest;
+import sv.edu.udb.data_collector.controller.request.WorkspaceUpdateRequest;
 import sv.edu.udb.data_collector.controller.response.WorkspaceResponse;
 import sv.edu.udb.data_collector.repository.WorkspaceRepository;
 import sv.edu.udb.data_collector.service.implementation.WorkspaceServiceImpl;
@@ -19,26 +20,23 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DataJpaTest(properties = "spring.flyway.enabled=false")
+@DataJpaTest(properties = {
+        "spring.flyway.enabled=false",
+        "spring.jpa.hibernate.ddl-auto=create-drop"
+})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @Import({WorkspaceServiceImpl.class, WorkspaceMapper.class})
 @ActiveProfiles("test")
 class WorkspaceServiceDataJpaTest {
 
-    private final WorkspaceService workspaceService;
-    private final WorkspaceRepository workspaceRepository;
-
-    WorkspaceServiceDataJpaTest(WorkspaceService workspaceService,
-                                WorkspaceRepository workspaceRepository) {
-        this.workspaceService = workspaceService;
-        this.workspaceRepository = workspaceRepository;
-    }
+    @Autowired private WorkspaceService workspaceService;
+    @Autowired private WorkspaceRepository workspaceRepository;
 
     @BeforeEach
     void seed() {
+        // Arrange
         WorkspaceCreateRequest req = new WorkspaceCreateRequest();
         req.setName("Anything you want to write");
-        req.setDescription("Initial description");
         workspaceService.create(req);
     }
 
@@ -49,58 +47,72 @@ class WorkspaceServiceDataJpaTest {
 
     @Test
     void list_shouldReturnOne() {
+        // Act
         List<WorkspaceResponse> list = workspaceService.list();
+        // Assert
         assertEquals(1, list.size());
         assertEquals("Anything you want to write", list.get(0).getName());
     }
 
-    // @Test
-    // void get_shouldReturnById() {
-    //     Long id = workspaceRepository.findAll().get(0).getId();
-    //     WorkspaceResponse resp = workspaceService.get(id);
-    //     assertNotNull(resp);
-    //     assertEquals(id, resp.getId());
-    // }
+    @Test
+    void get_shouldReturnById() {
+        // Arrange
+        String id = workspaceRepository.findAll().get(0).getId();
+        // Act
+        WorkspaceResponse resp = workspaceService.get(id);
+        // Assert
+        assertNotNull(resp);
+        assertEquals(id, resp.getId());
+        assertEquals("Anything you want to write", resp.getName());
+    }
 
     @Test
     void create_shouldWork() {
+        // Arrange
         WorkspaceCreateRequest req = new WorkspaceCreateRequest();
         req.setName("Second WS");
-        req.setDescription("Another description");
-
+        // Act
         WorkspaceResponse created = workspaceService.create(req);
+        // Assert
         assertNotNull(created.getId());
         assertEquals("Second WS", created.getName());
     }
 
     @Test
     void create_shouldFailOnDuplicateName() {
+        // Arrange
         WorkspaceCreateRequest dup = new WorkspaceCreateRequest();
-        dup.setName("Anything you want to write");
-
+        dup.setName("Anything you want to write"); // case-insensitive en el service
+        // Act + Assert
         assertThrows(ResponseStatusException.class, () -> workspaceService.create(dup));
     }
 
-    // @Test
-    // void patch_shouldUpdateDescription() {
-    //     Long id = workspaceRepository.findAll().get(0).getId();
+    @Test
+    void patch_shouldUpdateName() {
+        // Arrange
+        String id = workspaceRepository.findAll().get(0).getId();
+        WorkspaceUpdateRequest up = new WorkspaceUpdateRequest();
+        up.setName("New Name");
+        // Act
+        WorkspaceResponse updated = workspaceService.patch(id, up);
+        // Assert
+        assertEquals("New Name", updated.getName());
+        assertEquals(id, updated.getId());
+    }
 
-    //     WorkspaceUpdateRequest up = new WorkspaceUpdateRequest();
-    //     up.setDescription("New desc");
+    @Test
+    void delete_shouldRemove() {
+        // Arrange
+        String id = workspaceRepository.findAll().get(0).getId();
+        // Act
+        workspaceService.delete(id);
+        // Assert
+        assertTrue(workspaceRepository.findById(id).isEmpty());
+    }
 
-    //     WorkspaceResponse updated = workspaceService.patch(id, up);
-    //     assertEquals("New desc", updated.getDescription());
-    // }
-
-    // @Test
-    // void delete_shouldRemove() {
-    //     Long id = workspaceRepository.findAll().get(0).getId();
-    //     workspaceService.delete(id);
-    //     assertTrue(workspaceRepository.findById(id).isEmpty());
-    // }
-
-    // @Test
-    // void delete_shouldThrowNotFound() {
-    //     assertThrows(ResponseStatusException.class, () -> workspaceService.delete(999L));
-    // }
+    @Test
+    void delete_shouldThrowNotFound() {
+        // Act + Assert
+        assertThrows(ResponseStatusException.class, () -> workspaceService.delete("does-not-exist"));
+    }
 }

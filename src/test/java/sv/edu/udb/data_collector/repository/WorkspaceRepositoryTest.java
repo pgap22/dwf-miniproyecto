@@ -7,25 +7,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
-
 import sv.edu.udb.data_collector.domain.Workspace;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DataJpaTest()
+@DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 class WorkspaceRepositoryTest {
 
     @Autowired
-    private WorkspaceRepository workspaceRepository; // <— inyección por campo
+    private WorkspaceRepository workspaceRepository;
+
+    private long baseCount; // <-- conteo previo (por si hay datos sembrados por Flyway u otros tests)
 
     @BeforeEach
     void init() {
+        baseCount = workspaceRepository.count(); // medir antes de sembrar
+
         Workspace ws = Workspace.builder()
-                .name("Anything you want to write")
+                .name("Anything you want to write " + System.nanoTime()) // evitar colisiones por unique
                 .build();
         workspaceRepository.save(ws);
     }
@@ -36,29 +39,27 @@ class WorkspaceRepositoryTest {
     }
 
     @Test
-    void shouldHasOneWorkspace_When_FindAll() {
+    void shouldHasOneMoreWorkspace_When_FindAll_AfterSeed() {
         List<Workspace> list = workspaceRepository.findAll();
         assertNotNull(list);
-        assertEquals(1, list.size());
+        assertEquals(baseCount + 1, list.size()); // ya no asumimos “1” exacto
     }
-
-
 
     @Test
     void shouldSaveWorkspace_When_New() {
         Workspace ws = Workspace.builder()
-                .name("Second WS")
+                .name("Second WS " + System.nanoTime())
                 .build();
         Workspace saved = workspaceRepository.save(ws);
 
         Workspace found = workspaceRepository.findById(saved.getId()).orElse(null);
         assertNotNull(found);
-        assertEquals("Second WS", found.getName());
+        assertEquals(saved.getName(), found.getName());
     }
 
     @Test
     void shouldDeleteWorkspace_When_Exists() {
-        Workspace ws = Workspace.builder().name("To Delete").build();
+        Workspace ws = Workspace.builder().name("To Delete " + System.nanoTime()).build();
         ws = workspaceRepository.save(ws);
 
         String id = ws.getId();
