@@ -11,29 +11,25 @@ import java.time.Instant;
 @NoArgsConstructor @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "workspace_members",
-        uniqueConstraints = @UniqueConstraint(name = "uq_workspace_user", columnNames = {"workspace_id","user_id"}))
-public class WorkspaceMember {
+@Table(name = "workspace_users",
+        uniqueConstraints = @UniqueConstraint(name = "workspace_users_workspaceId_userId_key", columnNames = {"workspaceId","userId"}))
+public class WorkspaceUser {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "workspace_id", nullable = false, foreignKey = @ForeignKey(name = "fk_member_workspace"))
+    @JoinColumn(name = "workspaceId", nullable = false, foreignKey = @ForeignKey(name = "workspace_users_workspaceId_fkey"))
     private Workspace workspace;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_member_user"))
+    @JoinColumn(name = "userId", nullable = false, foreignKey = @ForeignKey(name = "workspace_users_userId_fkey"))
     private User user;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private MemberRole role;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private MemberStatus status;
 
     @CreationTimestamp
     @Column(name = "createdAt", nullable = false, updatable = false)
