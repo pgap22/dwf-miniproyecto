@@ -1,6 +1,8 @@
 package sv.edu.udb.data_collector.service.mapper;
 
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
+
 import sv.edu.udb.data_collector.controller.response.WorkspaceResponse;
 import sv.edu.udb.data_collector.domain.Workspace;
 
@@ -10,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class WorkspaceMapperTest {
 
-    private final WorkspaceMapper mapper = new WorkspaceMapper();
+    private final WorkspaceMapper mapper = Mappers.getMapper(WorkspaceMapper.class);
 
     @Test
     void toResponse_shouldMapAllFields() {

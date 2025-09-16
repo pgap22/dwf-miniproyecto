@@ -13,6 +13,5 @@ public class MemberResponse {
     String email;
     String name;
     String role;
-    String status;
     Instant joinedAt;
 }
