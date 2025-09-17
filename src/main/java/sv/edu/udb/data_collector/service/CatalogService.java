@@ -15,8 +15,8 @@ public interface CatalogService {
     List<Catalog> listCatalogs(String workspaceId); // si workspaceId es null, listar todos (según negocio)
 
     // Items
-    CatalogItem createItem(String catalogId, String code, String label, Boolean isActive);
-    CatalogItem updateItem(String catalogId, String itemId, String code, String label, Boolean isActive);
+    CatalogItem createItem(String catalogId, String value);
+    CatalogItem updateItem(String catalogId, String itemId, String value);
     void deleteItem(String catalogId, String itemId);
     CatalogItem getItem(String catalogId, String itemId);
     List<CatalogItem> listItems(String catalogId);

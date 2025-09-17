@@ -62,7 +62,7 @@ public class CatalogController {
     @PostMapping("/{catalogId}/items")
     public ResponseEntity<CatalogItemResponse> createItem(@PathVariable String catalogId,
                                                           @Valid @RequestBody CatalogItemCreateRequest req) {
-        CatalogItem saved = service.createItem(catalogId, req.getCode(), req.getLabel(), req.getIsActive());
+        CatalogItem saved = service.createItem(catalogId, req.getValue());
         return ResponseEntity
                 .created(URI.create("/api/catalogs/" + catalogId + "/items/" + saved.getId()))
                 .body(itemMapper.toResponse(saved));
@@ -73,7 +73,7 @@ public class CatalogController {
                                           @PathVariable String itemId,
                                           @Valid @RequestBody CatalogItemUpdateRequest req) {
         return itemMapper.toResponse(
-                service.updateItem(catalogId, itemId, req.getCode(), req.getLabel(), req.getIsActive())
+                service.updateItem(catalogId, itemId, req.getValue())
         );
     }
 

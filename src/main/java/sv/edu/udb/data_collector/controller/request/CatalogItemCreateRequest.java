@@ -6,8 +6,5 @@ import lombok.Data;
 @Data
 public class CatalogItemCreateRequest {
     @NotBlank
-    private String code;
-    @NotBlank
-    private String label;
-    private Boolean isActive; // default true
+    private String value;
 }

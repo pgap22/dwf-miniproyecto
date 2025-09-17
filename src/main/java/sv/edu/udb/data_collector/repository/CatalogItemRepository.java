@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CatalogItemRepository extends JpaRepository<CatalogItem, String> {
-    List<CatalogItem> findAllByCatalog_IdOrderByLabelAsc(String catalogId);
+    List<CatalogItem> findAllByCatalog_IdOrderByValue(String catalogId);
+
     Optional<CatalogItem> findByIdAndCatalog_Id(String id, String catalogId);
-    boolean existsByCatalog_IdAndCode(String catalogId, String code);
+
+    boolean existsByCatalogIdAndValue(String catalogId, String value);
 }

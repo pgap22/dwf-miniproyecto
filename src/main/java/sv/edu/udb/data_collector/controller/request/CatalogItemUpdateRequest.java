@@ -6,8 +6,5 @@ import lombok.Data;
 @Data
 public class CatalogItemUpdateRequest {
     @NotBlank
-    private String code;
-    @NotBlank
-    private String label;
-    private Boolean isActive;
+    private String value;
 }
