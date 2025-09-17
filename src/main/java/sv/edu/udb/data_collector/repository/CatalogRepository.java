@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CatalogRepository extends JpaRepository<Catalog, String> {
-    List<Catalog> findAllByWorkspace_IdOrderByNameAsc(String workspaceId);
-    Optional<Catalog> findByIdAndWorkspace_Id(String id, String workspaceId);
-    boolean existsByNameAndWorkspace_Id(String name, String workspaceId);
+    List<Catalog> findAllByWorkspaceIdOrderByNameAsc(String workspaceId);
+    Optional<Catalog> findByIdAndWorkspaceId(String id, String workspaceId);
+    boolean existsByNameAndWorkspaceId(String name, String workspaceId);
 }

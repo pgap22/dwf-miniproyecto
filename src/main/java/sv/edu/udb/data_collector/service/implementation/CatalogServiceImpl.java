@@ -32,7 +32,7 @@ public class CatalogServiceImpl implements CatalogService {
         if (workspaceId != null && !workspaceId.isBlank()) {
             ws = workspaceRepository.findById(workspaceId)
                     .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Workspace not found"));
-            if (catalogRepository.existsByNameAndWorkspace_Id(name, workspaceId)) {
+            if (catalogRepository.existsByNameAndWorkspaceId(name, workspaceId)) {
                 throw new ResponseStatusException(CONFLICT, "Catalog name already exists in this workspace");
             }
         }
@@ -53,7 +53,7 @@ public class CatalogServiceImpl implements CatalogService {
 
         // validar unique name dentro del workspace (si aplica)
         String wsId = catalog.getWorkspace() != null ? catalog.getWorkspace().getId() : null;
-        if (wsId != null && catalogRepository.existsByNameAndWorkspace_Id(name, wsId)
+        if (wsId != null && catalogRepository.existsByNameAndWorkspaceId(name, wsId)
                 && !catalog.getName().equalsIgnoreCase(name)) {
             throw new ResponseStatusException(CONFLICT, "Catalog name already exists in this workspace");
         }
@@ -85,42 +85,38 @@ public class CatalogServiceImpl implements CatalogService {
                     .sorted((a,b) -> a.getName().compareToIgnoreCase(b.getName()))
                     .toList();
         }
-        return catalogRepository.findAllByWorkspace_IdOrderByNameAsc(workspaceId);
+        return catalogRepository.findAllByWorkspaceIdOrderByNameAsc(workspaceId);
     }
 
     // ----- Items -----
     @Override
-    public CatalogItem createItem(String catalogId, String code, String label, Boolean isActive) {
+    public CatalogItem createItem(String catalogId, String value) {
         Catalog catalog = catalogRepository.findById(catalogId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Catalog not found"));
 
-        if (itemRepository.existsByCatalog_IdAndCode(catalogId, code)) {
-            throw new ResponseStatusException(CONFLICT, "Item code already exists in this catalog");
+        if (itemRepository.existsByCatalogIdAndValue(catalogId, value)) {
+            throw new ResponseStatusException(CONFLICT, "Item value already exists in this catalog");
         }
 
         CatalogItem item = CatalogItem.builder()
                 .catalog(catalog)
-                .code(code)
-                .label(label)
-                .isActive(isActive != null ? isActive : true)
+                .value(value)
                 .build();
 
         return itemRepository.save(item);
     }
 
     @Override
-    public CatalogItem updateItem(String catalogId, String itemId, String code, String label, Boolean isActive) {
+    public CatalogItem updateItem(String catalogId, String itemId, String value) {
         CatalogItem item = itemRepository.findByIdAndCatalog_Id(itemId, catalogId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Item not found in catalog"));
 
         // si cambia el code, validamos unique
-        if (!item.getCode().equals(code) && itemRepository.existsByCatalog_IdAndCode(catalogId, code)) {
-            throw new ResponseStatusException(CONFLICT, "Another item with this code already exists");
+        if (!item.getValue().equals(value) && itemRepository.existsByCatalogIdAndValue(catalogId, value)) {
+            throw new ResponseStatusException(CONFLICT, "Another item with this value already exists");
         }
 
-        item.setCode(code);
-        item.setLabel(label);
-        if (isActive != null) item.setActive(isActive);
+        item.setValue(value);
 
         return itemRepository.save(item);
     }
@@ -142,6 +138,6 @@ public class CatalogServiceImpl implements CatalogService {
     @Override
     @Transactional(readOnly = true)
     public List<CatalogItem> listItems(String catalogId) {
-        return itemRepository.findAllByCatalog_IdOrderByLabelAsc(catalogId);
+        return itemRepository.findAllByCatalog_IdOrderByValue(catalogId);
     }
 }
