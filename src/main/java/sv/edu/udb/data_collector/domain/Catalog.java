@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -12,13 +13,15 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "catalogs", uniqueConstraints = {
-        @UniqueConstraint(name = "uq_catalog_name_per_ws", columnNames = {"workspace_id", "name"})
+        @UniqueConstraint(name = "catalogs_name_key", columnNames = {"workspaceId", "name"})
 })
 @Getter @Setter @Builder
 @NoArgsConstructor @AllArgsConstructor
 public class Catalog {
 
     @Id
+    @UuidGenerator // Genera UUIDs automáticamente (si prefieres String “cuid”, mira la nota abajo)
+    @Column(nullable = false, updatable = false, length = 36)
     private String id;
 
     @Column(nullable = false, length = 120)
@@ -28,8 +31,8 @@ public class Catalog {
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "workspace_id",
-            foreignKey = @ForeignKey(name = "fk_catalog_ws"))
+    @JoinColumn(name = "workspaceId",
+            foreignKey = @ForeignKey(name = "catalogs_workspaceId_fkey"))
     private Workspace workspace;
 
     @OneToMany(mappedBy = "catalog", cascade = CascadeType.ALL, orphanRemoval = true)

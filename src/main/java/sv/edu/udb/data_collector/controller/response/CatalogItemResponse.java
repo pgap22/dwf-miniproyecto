@@ -10,9 +10,7 @@ import java.time.Instant;
 public class CatalogItemResponse {
     String id;
     String catalogId;
-    String code;
-    String label;
-    boolean isActive;
+    String value;
     Instant createdAt;
     Instant updatedAt;
 }
