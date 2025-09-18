@@ -3,7 +3,7 @@ package sv.edu.udb.data_collector.controller.response;
 import lombok.Data;
 
 @Data // Lombok para getters, setters, etc.
-public class RecordSchemeResponse {
+public class RecordSchemaResponse {
 
     private String id;
     private String name;

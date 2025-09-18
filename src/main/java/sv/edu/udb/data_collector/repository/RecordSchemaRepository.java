@@ -2,7 +2,7 @@ package sv.edu.udb.data_collector.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import sv.edu.udb.data_collector.domain.RecordScheme;
+import sv.edu.udb.data_collector.domain.RecordSchema;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,11 +12,11 @@ import java.util.Optional;
  * Extiende JpaRepository para obtener métodos CRUD estándar.
  */
 @Repository
-public interface RecordSchemeRepository extends JpaRepository<RecordScheme, String> {
+public interface RecordSchemaRepository extends JpaRepository<RecordSchema, String> {
 
-    Optional<RecordScheme> findByWorkspaceIdAndName(String workspaceId, String name);
+    Optional<RecordSchema> findByWorkspaceIdAndName(String workspaceId, String name);
 
 
-    List<RecordScheme> findByWorkspaceId(String workspaceId);
+    List<RecordSchema> findByWorkspaceId(String workspaceId);
 
 }

@@ -1,6 +1,6 @@
 package sv.edu.udb.data_collector.service;
 
-import sv.edu.udb.data_collector.domain.RecordScheme;
+import sv.edu.udb.data_collector.domain.RecordSchema;
 import java.util.List;
 import java.util.Optional;
 
@@ -8,7 +8,7 @@ import java.util.Optional;
  * Interfaz de servicio para gestionar la lógica de negocio de los RecordSchemes.
  * Esta versión trabaja directamente con las entidades de dominio y parámetros primitivos.
  */
-public interface RecordSchemeService {
+public interface RecordSchemaService {
 
     /**
      * Crea un nuevo esquema de registro dentro de un espacio de trabajo específico.
@@ -18,7 +18,7 @@ public interface RecordSchemeService {
      * @param description La descripción opcional para el nuevo esquema.
      * @return El RecordScheme que fue guardado en la base de datos.
      */
-    RecordScheme create(String workspaceId, String name, String description);
+    RecordSchema create(String workspaceId, String name, String description);
 
     /**
      * Busca todos los esquemas de registro que pertenecen a un workspace.
@@ -26,7 +26,7 @@ public interface RecordSchemeService {
      * @param workspaceId El ID del workspace.
      * @return Una lista de los esquemas encontrados; puede estar vacía.
      */
-    List<RecordScheme> findAllByWorkspaceId(String workspaceId);
+    List<RecordSchema> findAllByWorkspaceId(String workspaceId);
 
     /**
      * Busca un esquema de registro específico por su ID.
@@ -34,7 +34,7 @@ public interface RecordSchemeService {
      * @param id El ID único del esquema.
      * @return Un Optional conteniendo el RecordScheme si se encuentra, de lo contrario un Optional vacío.
      */
-    Optional<RecordScheme> findById(String id);
+    Optional<RecordSchema> findById(String id);
 
     /**
      * Actualiza la información de un esquema de registro existente.
@@ -44,7 +44,7 @@ public interface RecordSchemeService {
      * La implementación se encargará de aplicar solo los campos permitidos.
      * @return El RecordScheme con la información actualizada.
      */
-    RecordScheme update(String id, RecordScheme updatedData);
+    RecordSchema update(String id, RecordSchema updatedData);
 
     /**
      * Elimina un esquema de registro por su ID.

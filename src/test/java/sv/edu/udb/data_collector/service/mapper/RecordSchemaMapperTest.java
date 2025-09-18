@@ -2,19 +2,20 @@ package sv.edu.udb.data_collector.service.mapper;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 
-import sv.edu.udb.data_collector.controller.request.UpdateRecordSchemeRequest;
-import sv.edu.udb.data_collector.controller.response.RecordSchemeResponse;
-import sv.edu.udb.data_collector.domain.RecordScheme;
+import sv.edu.udb.data_collector.controller.request.UpdateRecordSchemaRequest;
+import sv.edu.udb.data_collector.controller.response.RecordSchemaResponse;
+import sv.edu.udb.data_collector.domain.RecordSchema;
 import sv.edu.udb.data_collector.domain.Workspace;
 
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class RecordSchemeMapperTest {
+class RecordSchemaMapperTest {
 
     // Obtenemos una instancia del mapper que MapStruct generó
-    private final RecordSchemeMapper mapper = RecordSchemeMapper.INSTANCE;
+    private final RecordSchemaMapper mapper = Mappers.getMapper(RecordSchemaMapper.class);
 
     @Test
     @DisplayName("Debe mapear una entidad RecordScheme a un RecordSchemeResponse correctamente")
@@ -26,7 +27,7 @@ class RecordSchemeMapperTest {
                 .name("Test Workspace")
                 .build();
         
-        RecordScheme entity = RecordScheme.builder()
+        RecordSchema entity = RecordSchema.builder()
                 .id("rs-456")
                 .name("Esquema de Prueba")
                 .description("Descripción de prueba")
@@ -35,7 +36,7 @@ class RecordSchemeMapperTest {
 
         // Act (Actuar)
         // Ejecutamos el método de mapeo que queremos probar.
-        RecordSchemeResponse dto = mapper.toResponseDTO(entity);
+        RecordSchemaResponse dto = mapper.toResponseDTO(entity);
 
         // Assert (Afirmar)
         // Verificamos que cada campo del DTO resultante tenga el valor esperado.
@@ -52,7 +53,7 @@ class RecordSchemeMapperTest {
     void shouldUpdateEntityFromRequestDTO() {
         // Arrange
         // Creamos una entidad con datos originales.
-        RecordScheme existingEntity = RecordScheme.builder()
+        RecordSchema existingEntity = RecordSchema.builder()
                 .id("rs-789")
                 .name("Nombre Antiguo")
                 .description("Descripción Antigua")
@@ -60,7 +61,7 @@ class RecordSchemeMapperTest {
                 .build();
         
         // Creamos el DTO con los datos nuevos.
-        UpdateRecordSchemeRequest requestDTO = new UpdateRecordSchemeRequest();
+        UpdateRecordSchemaRequest requestDTO = new UpdateRecordSchemaRequest();
         requestDTO.setName("Nombre Actualizado");
         requestDTO.setDescription("Descripción Actualizada");
 
@@ -81,10 +82,10 @@ class RecordSchemeMapperTest {
     @DisplayName("Debe devolver null si la entidad de entrada es null")
     void shouldReturnNullWhenEntityIsNull() {
         // Arrange
-        RecordScheme entity = null;
+        RecordSchema entity = null;
         
         // Act
-        RecordSchemeResponse dto = mapper.toResponseDTO(entity);
+        RecordSchemaResponse dto = mapper.toResponseDTO(entity);
         
         // Assert
         assertThat(dto).isNull();

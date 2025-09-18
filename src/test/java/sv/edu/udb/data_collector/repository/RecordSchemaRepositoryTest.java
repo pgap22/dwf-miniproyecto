@@ -9,7 +9,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
 
-import sv.edu.udb.data_collector.domain.RecordScheme;
+import sv.edu.udb.data_collector.domain.RecordSchema;
 import sv.edu.udb.data_collector.domain.Workspace;
 
 import java.util.List;
@@ -20,13 +20,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-class RecordSchemeRepositoryTest {
+class RecordSchemaRepositoryTest {
 
     @Autowired
     private TestEntityManager testEntityManager; // Utilidad para manipular entidades en las pruebas
 
     @Autowired
-    private RecordSchemeRepository recordSchemeRepository; // El repositorio que vamos a probar
+    private RecordSchemaRepository recordSchemeRepository; // El repositorio que vamos a probar
 
     private Workspace workspace;
 
@@ -42,7 +42,7 @@ class RecordSchemeRepositoryTest {
     void findByWorkspaceIdAndName_whenSchemeExists_thenReturnScheme() {
         // Arrange (Organizar)
         // Preparamos los datos necesarios para la prueba.
-        RecordScheme scheme = RecordScheme.builder()
+        RecordSchema scheme = RecordSchema.builder()
                 .name("Esquema de Clientes")
                 .description("Esquema para datos de clientes")
                 .workspace(workspace)
@@ -51,7 +51,7 @@ class RecordSchemeRepositoryTest {
 
         // Act (Actuar)
         // Ejecutamos el método que queremos probar.
-        Optional<RecordScheme> foundScheme = recordSchemeRepository.findByWorkspaceIdAndName(
+        Optional<RecordSchema> foundScheme = recordSchemeRepository.findByWorkspaceIdAndName(
                 workspace.getId(),
                 "Esquema de Clientes"
         );
@@ -70,7 +70,7 @@ class RecordSchemeRepositoryTest {
         // No necesitamos crear ningún RecordScheme para esta prueba.
 
         // Act
-        Optional<RecordScheme> foundScheme = recordSchemeRepository.findByWorkspaceIdAndName(
+        Optional<RecordSchema> foundScheme = recordSchemeRepository.findByWorkspaceIdAndName(
                 workspace.getId(),
                 "Nombre Inexistente"
         );
@@ -83,12 +83,12 @@ class RecordSchemeRepositoryTest {
     @DisplayName("Debe encontrar todos los RecordSchemes para un workspaceId específico")
     void findByWorkspaceId_whenSchemesExist_thenReturnSchemeList() {
         // Arrange
-        RecordScheme scheme1 = RecordScheme.builder().name("Esquema A").workspace(workspace).build();
-        RecordScheme scheme2 = RecordScheme.builder().name("Esquema B").workspace(workspace).build();
+        RecordSchema scheme1 = RecordSchema.builder().name("Esquema A").workspace(workspace).build();
+        RecordSchema scheme2 = RecordSchema.builder().name("Esquema B").workspace(workspace).build();
 
         // Creamos otro workspace y esquema para asegurarnos de que no se mezclen los resultados
         Workspace anotherWorkspace = Workspace.builder().name("Otro Workspace").build();
-        RecordScheme schemeFromAnotherWorkspace = RecordScheme.builder().name("Esquema C").workspace(anotherWorkspace).build();
+        RecordSchema schemeFromAnotherWorkspace = RecordSchema.builder().name("Esquema C").workspace(anotherWorkspace).build();
 
         testEntityManager.persist(scheme1);
         testEntityManager.persist(scheme2);
@@ -96,12 +96,12 @@ class RecordSchemeRepositoryTest {
         testEntityManager.persistAndFlush(schemeFromAnotherWorkspace);
 
         // Act
-        List<RecordScheme> foundSchemes = recordSchemeRepository.findByWorkspaceId(workspace.getId());
+        List<RecordSchema> foundSchemes = recordSchemeRepository.findByWorkspaceId(workspace.getId());
 
         // Assert
         assertThat(foundSchemes).isNotNull();
         assertThat(foundSchemes).hasSize(2); // Debemos encontrar solo 2
-        assertThat(foundSchemes).extracting(RecordScheme::getName).containsExactlyInAnyOrder("Esquema A", "Esquema B");
+        assertThat(foundSchemes).extracting(RecordSchema::getName).containsExactlyInAnyOrder("Esquema A", "Esquema B");
     }
     
     @Test
@@ -111,7 +111,7 @@ class RecordSchemeRepositoryTest {
         // El workspace creado en setUp() no tiene esquemas asociados por defecto.
 
         // Act
-        List<RecordScheme> foundSchemes = recordSchemeRepository.findByWorkspaceId(workspace.getId());
+        List<RecordSchema> foundSchemes = recordSchemeRepository.findByWorkspaceId(workspace.getId());
 
         // Assert
         assertThat(foundSchemes).isNotNull();
