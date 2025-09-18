@@ -4,26 +4,26 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import sv.edu.udb.data_collector.domain.RecordScheme;
+import sv.edu.udb.data_collector.domain.RecordSchema;
 import sv.edu.udb.data_collector.domain.Workspace;
-import sv.edu.udb.data_collector.repository.RecordSchemeRepository;
+import sv.edu.udb.data_collector.repository.RecordSchemaRepository;
 import sv.edu.udb.data_collector.repository.WorkspaceRepository;
-import sv.edu.udb.data_collector.service.RecordSchemeService;
+import sv.edu.udb.data_collector.service.RecordSchemaService;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service // Anotación para que Spring lo reconozca como un bean de servicio
 @RequiredArgsConstructor // Lombok: crea un constructor con los campos 'final'
-public class RecordSchemeServiceImpl implements RecordSchemeService {
+public class RecordSchemaServiceImpl implements RecordSchemaService {
 
     // Inyección de dependencias a través del constructor (manejado por Lombok)
-    private final RecordSchemeRepository recordSchemeRepository;
+    private final RecordSchemaRepository recordSchemeRepository;
     private final WorkspaceRepository workspaceRepository;
 
     @Override
     @Transactional // Asegura que toda la operación se ejecute en una sola transacción
-    public RecordScheme create(String workspaceId, String name, String description) {
+    public RecordSchema create(String workspaceId, String name, String description) {
         // 1. Validar que el Workspace exista
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new EntityNotFoundException("Workspace no encontrado con el id: " + workspaceId));
@@ -35,7 +35,7 @@ public class RecordSchemeServiceImpl implements RecordSchemeService {
                 });
 
         // 3. Crear y guardar la nueva entidad
-        RecordScheme newScheme = RecordScheme.builder()
+        RecordSchema newScheme = RecordSchema.builder()
                 .name(name)
                 .description(description)
                 .workspace(workspace)
@@ -46,21 +46,21 @@ public class RecordSchemeServiceImpl implements RecordSchemeService {
 
     @Override
     @Transactional(readOnly = true) // Optimización para operaciones de solo lectura
-    public List<RecordScheme> findAllByWorkspaceId(String workspaceId) {
+    public List<RecordSchema> findAllByWorkspaceId(String workspaceId) {
         return recordSchemeRepository.findByWorkspaceId(workspaceId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<RecordScheme> findById(String id) {
+    public Optional<RecordSchema> findById(String id) {
         return recordSchemeRepository.findById(id);
     }
 
     @Override
     @Transactional
-    public RecordScheme update(String id, RecordScheme updatedData) {
+    public RecordSchema update(String id, RecordSchema updatedData) {
         // 1. Encontrar el esquema existente o lanzar una excepción si no se encuentra
-        RecordScheme existingScheme = recordSchemeRepository.findById(id)
+        RecordSchema existingScheme = recordSchemeRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("RecordScheme no encontrado con el id: " + id));
 
         // 2. Validar si el nombre ha cambiado y si el nuevo nombre ya está en uso

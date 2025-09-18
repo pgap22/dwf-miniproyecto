@@ -15,7 +15,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor
 @Builder
-public class RecordScheme {
+public class RecordSchema {
 
     /**
      * Identificador único para el esquema de registro, generado automáticamente.
