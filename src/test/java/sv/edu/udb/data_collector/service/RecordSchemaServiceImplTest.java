@@ -7,11 +7,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import sv.edu.udb.data_collector.domain.RecordScheme;
+import sv.edu.udb.data_collector.domain.RecordSchema;
 import sv.edu.udb.data_collector.domain.Workspace;
-import sv.edu.udb.data_collector.repository.RecordSchemeRepository;
+import sv.edu.udb.data_collector.repository.RecordSchemaRepository;
 import sv.edu.udb.data_collector.repository.WorkspaceRepository;
-import sv.edu.udb.data_collector.service.implementation.RecordSchemeServiceImpl;
+import sv.edu.udb.data_collector.service.implementation.RecordSchemaServiceImpl;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.Optional;
 
@@ -22,25 +22,25 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class) // Habilita las anotaciones de Mockito
-class RecordSchemeServiceImplTest {
+class RecordSchemaServiceImplTest {
 
     @Mock // Mockito creará una implementación falsa de este repositorio
-    private RecordSchemeRepository recordSchemeRepository;
+    private RecordSchemaRepository recordSchemeRepository;
 
     @Mock // Y de este también
     private WorkspaceRepository workspaceRepository;
 
     @InjectMocks // Mockito inyectará los mocks de arriba en esta instancia del servicio
-    private RecordSchemeServiceImpl recordSchemeService;
+    private RecordSchemaServiceImpl recordSchemeService;
 
     private Workspace workspace;
-    private RecordScheme recordScheme;
+    private RecordSchema recordScheme;
 
     @BeforeEach
     void setUp() {
         // Pre-configuramos objetos de dominio que usaremos en varias pruebas
         workspace = Workspace.builder().id("ws-123").name("Mi Workspace").build();
-        recordScheme = RecordScheme.builder()
+        recordScheme = RecordSchema.builder()
                 .id("rs-456")
                 .name("Esquema de Clientes")
                 .description("Datos de clientes")
@@ -59,16 +59,16 @@ class RecordSchemeServiceImplTest {
         // Simulamos que no existe un esquema con el mismo nombre
         when(recordSchemeRepository.findByWorkspaceIdAndName("ws-123", "Nuevo Esquema")).thenReturn(Optional.empty());
         // Simulamos lo que devolverá el método save
-        when(recordSchemeRepository.save(any(RecordScheme.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(recordSchemeRepository.save(any(RecordSchema.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act (Actuar)
-        RecordScheme createdScheme = recordSchemeService.create("ws-123", "Nuevo Esquema", "Descripción");
+        RecordSchema createdScheme = recordSchemeService.create("ws-123", "Nuevo Esquema", "Descripción");
 
         // Assert (Afirmar)
         assertThat(createdScheme).isNotNull();
         assertThat(createdScheme.getName()).isEqualTo("Nuevo Esquema");
         assertThat(createdScheme.getWorkspace().getId()).isEqualTo("ws-123");
-        verify(recordSchemeRepository, times(1)).save(any(RecordScheme.class)); // Verificamos que se llamó a save()
+        verify(recordSchemeRepository, times(1)).save(any(RecordSchema.class)); // Verificamos que se llamó a save()
     }
 
     @Test
@@ -108,12 +108,12 @@ class RecordSchemeServiceImplTest {
     void update_whenDataIsValid_shouldReturnUpdatedScheme() {
         // Arrange
         when(recordSchemeRepository.findById("rs-456")).thenReturn(Optional.of(recordScheme));
-        when(recordSchemeRepository.save(any(RecordScheme.class))).thenReturn(recordScheme);
+        when(recordSchemeRepository.save(any(RecordSchema.class))).thenReturn(recordScheme);
 
-        RecordScheme updatedData = RecordScheme.builder().name("Nuevo Nombre").description("Nueva Desc.").build();
+        RecordSchema updatedData = RecordSchema.builder().name("Nuevo Nombre").description("Nueva Desc.").build();
 
         // Act
-        RecordScheme result = recordSchemeService.update("rs-456", updatedData);
+        RecordSchema result = recordSchemeService.update("rs-456", updatedData);
 
         // Assert
         assertThat(result.getName()).isEqualTo("Nuevo Nombre");
@@ -126,7 +126,7 @@ class RecordSchemeServiceImplTest {
     void update_whenSchemeNotFound_shouldThrowEntityNotFoundException() {
         // Arrange
         when(recordSchemeRepository.findById(anyString())).thenReturn(Optional.empty());
-        RecordScheme updatedData = RecordScheme.builder().name("data").build();
+        RecordSchema updatedData = RecordSchema.builder().name("data").build();
 
         // Act & Assert
         assertThrows(EntityNotFoundException.class, () -> {
