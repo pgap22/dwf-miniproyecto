@@ -63,7 +63,7 @@ class AuthControllerTest {
     AuthService authService;
 
     @Test
-    @DisplayName("POST /auth/login → 200 con token y usuario")
+    @DisplayName("POST /api/login → 200 con token y usuario")
     void login_ok_200() throws Exception {
         // ---------- Arrange ----------
         var expectedUser = UserResponse.builder()
@@ -80,7 +80,7 @@ class AuthControllerTest {
         );
 
         // ---------- Act ----------
-        var result = mvc.perform(post("/auth/login")
+        var result = mvc.perform(post("/api/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andReturn();
@@ -93,7 +93,7 @@ class AuthControllerTest {
         assertThat(status).isEqualTo(200);
         assertThat(resp.getContentType()).contains(MediaType.APPLICATION_JSON_VALUE);
         // Validación por JSONPath para facilitar debug puntual
-        mvc.perform(post("/auth/login")
+        mvc.perform(post("/api/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isOk())
@@ -103,7 +103,7 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("POST /auth/login → 400 cuando la validación falla")
+    @DisplayName("POST /api/login → 400 cuando la validación falla")
     void login_400_por_validacion() throws Exception {
         // ---------- Arrange ----------
         var invalidPayload = """
@@ -111,7 +111,7 @@ class AuthControllerTest {
         """.formatted(BAD_EMAIL, BAD_PASSWORD);
 
         // ---------- Act ----------
-        var result = mvc.perform(post("/auth/login")
+        var result = mvc.perform(post("/api/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidPayload))
                 .andReturn();

@@ -9,7 +9,7 @@ import sv.edu.udb.data_collector.service.AuthService;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/auth")
+@RequestMapping("/api")
 public class AuthController {
 
     private final AuthService authService;

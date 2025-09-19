@@ -17,7 +17,7 @@ import sv.edu.udb.data_collector.service.UserService;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 public class UserController {
 
   private final UserService userService;
