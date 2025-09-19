@@ -7,8 +7,5 @@ INSERT INTO validation_rules (id, name) VALUES
   (UUID(), 'LESS_THAN'),
   (UUID(), 'LESS_OR_EQUAL'),
   (UUID(), 'GREATER_THAN'),
-  (UUID(), 'GREATER_OR_EQUAL'),
-  (UUID(), 'BETWEEN'),
-  (UUID(), 'IN'),
-  (UUID(), 'NOT_IN')
+  (UUID(), 'GREATER_OR_EQUAL')
 ON DUPLICATE KEY UPDATE name = VALUES(name);
