@@ -2,6 +2,7 @@ package sv.edu.udb.data_collector.controller.response;
 
 import lombok.Builder;
 import lombok.Value;
+import sv.edu.udb.data_collector.domain.MemberRole;
 
 import java.time.Instant;
 
@@ -12,6 +13,6 @@ public class MemberResponse {
     String userId;
     String email;
     String name;
-    String role;
+    MemberRole role;
     Instant joinedAt;
 }
