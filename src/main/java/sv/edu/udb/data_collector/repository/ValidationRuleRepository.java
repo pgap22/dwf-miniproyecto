@@ -10,5 +10,6 @@ import sv.edu.udb.data_collector.domain.ValidationRule;
 @Repository
 public interface ValidationRuleRepository extends JpaRepository<ValidationRule, String> {
     Optional<ValidationRule> findByNameIgnoreCase(String name);
+
     boolean existsByNameIgnoreCase(String name);
 }
