@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
+import jakarta.persistence.EntityNotFoundException;
+import sv.edu.udb.data_collector.controller.request.CatalogUpdateRequest;
 import sv.edu.udb.data_collector.domain.Catalog;
 import sv.edu.udb.data_collector.domain.CatalogItem;
 import sv.edu.udb.data_collector.domain.Workspace;
@@ -47,19 +50,30 @@ public class CatalogServiceImpl implements CatalogService {
     }
 
     @Override
-    public Catalog updateCatalog(String catalogId, String name, String description) {
+    @Transactional
+    public Catalog updateCatalog(String catalogId, CatalogUpdateRequest request) {
+        // 1. Obtenemos la entidad existente de la base de datos.
         Catalog catalog = catalogRepository.findById(catalogId)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Catalog not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Catalog not found with id: " + catalogId));
 
-        // validar unique name dentro del workspace (si aplica)
-        String wsId = catalog.getWorkspace() != null ? catalog.getWorkspace().getId() : null;
-        if (wsId != null && catalogRepository.existsByNameAndWorkspaceId(name, wsId)
-                && !catalog.getName().equalsIgnoreCase(name)) {
-            throw new ResponseStatusException(CONFLICT, "Catalog name already exists in this workspace");
+        // 2. Actualizamos el nombre solo si se proporcionó uno nuevo.
+        if (request.getName() != null && !request.getName().isBlank()) {
+            // Validamos que el nuevo nombre no cree un duplicado.
+            String wsId = catalog.getWorkspace().getId();
+            if (!catalog.getName().equalsIgnoreCase(request.getName()) &&
+                    catalogRepository.existsByNameAndWorkspaceId(request.getName(), wsId)) {
+
+                throw new IllegalStateException("Catalog name already exists in this workspace");
+            }
+            catalog.setName(request.getName());
         }
 
-        catalog.setName(name);
-        catalog.setDescription(description);
+        // 3. Actualizamos la descripción solo si se proporcionó una nueva.
+        if (request.getDescription() != null) {
+            catalog.setDescription(request.getDescription());
+        }
+
+        // 4. Guardamos la entidad con los cambios aplicados.
         return catalogRepository.save(catalog);
     }
 
@@ -82,7 +96,7 @@ public class CatalogServiceImpl implements CatalogService {
     public List<Catalog> listCatalogs(String workspaceId) {
         if (workspaceId == null || workspaceId.isBlank()) {
             return catalogRepository.findAll().stream()
-                    .sorted((a,b) -> a.getName().compareToIgnoreCase(b.getName()))
+                    .sorted((a, b) -> a.getName().compareToIgnoreCase(b.getName()))
                     .toList();
         }
         return catalogRepository.findAllByWorkspaceIdOrderByNameAsc(workspaceId);
