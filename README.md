@@ -285,7 +285,7 @@ public class UserServiceImpl implements UserService {
 
 ```java
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
   private final UserService userService;
@@ -595,7 +595,7 @@ class UserControllerTest {
         when(userService.list()).thenReturn(expected);
 
         // ---------- Act ----------
-        var result = mvc.perform(get("/users").accept(MediaType.APPLICATION_JSON))
+        var result = mvc.perform(get("/api/users").accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andReturn();
 
@@ -622,7 +622,7 @@ class UserControllerTest {
         """;
 
         // ---------- Act ----------
-        var result = mvc.perform(post("/users")
+        var result = mvc.perform(post("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload)
                         .accept(MediaType.APPLICATION_JSON))
@@ -647,7 +647,7 @@ class UserControllerTest {
         """;
 
         // ---------- Act ----------
-        var result = mvc.perform(post("/users")
+        var result = mvc.perform(post("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalid)
                         .accept(MediaType.APPLICATION_JSON))

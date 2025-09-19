@@ -115,7 +115,7 @@ class UserControllerTest {
         when(userService.list()).thenReturn(expected);
 
         // ---------- Act ----------
-        var result = mvc.perform(get("/users").accept(APPLICATION_JSON))
+        var result = mvc.perform(get("/api/users").accept(APPLICATION_JSON))
                 .andDo(print())
                 .andReturn();
 
@@ -145,7 +145,7 @@ class UserControllerTest {
 
         // ---------- Act ----------
         var result = mvc.perform(
-                        post("/users")
+                        post("/api/users")
                                 .contentType(APPLICATION_JSON)
                                 .content(payload)
                                 .accept(APPLICATION_JSON)
@@ -173,7 +173,7 @@ class UserControllerTest {
 
         // ---------- Act ----------
         var result = mvc.perform(
-                        post("/users")
+                        post("/api/users")
                                 .contentType(APPLICATION_JSON)
                                 .content(invalid)
                                 .accept(APPLICATION_JSON)
