@@ -1,36 +1,35 @@
 package sv.edu.udb.data_collector.service;
 
-import sv.edu.udb.data_collector.controller.request.CreateAttributeRequest;
-import sv.edu.udb.data_collector.controller.request.UpdateAttributeRequest;
-import sv.edu.udb.data_collector.domain.RecordSchemaAttribute;
+import sv.edu.udb.data_collector.controller.request.RecordSchemaAttributeCreateRequest;
+import sv.edu.udb.data_collector.controller.request.RecordSchemaAttributeUpdateRequest;
+import sv.edu.udb.data_collector.controller.response.RecordSchemaAttributeResponse;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface RecordSchemaAttributeService {
 
     /**
      * Añade un nuevo atributo a un esquema existente.
      */
-    RecordSchemaAttribute addAttributeToSchema(String recordSchemaId, CreateAttributeRequest request);
+    RecordSchemaAttributeResponse add(String recordSchemaId, RecordSchemaAttributeCreateRequest request);
 
     /**
      * Obtiene todos los atributos de un esquema específico.
      */
-    List<RecordSchemaAttribute> findAttributesBySchemaId(String recordSchemaId);
+    List<RecordSchemaAttributeResponse> findBySchemaId(String recordSchemaId);
 
     /**
      * Obtiene un atributo por su ID único.
      */
-    Optional<RecordSchemaAttribute> findAttributeById(String attributeId);
+    RecordSchemaAttributeResponse findById(String attributeId);
 
     /**
      * Actualiza un atributo existente.
      */
-    RecordSchemaAttribute updateAttribute(String attributeId, UpdateAttributeRequest request);
+    RecordSchemaAttributeResponse update(String attributeId, RecordSchemaAttributeUpdateRequest request);
 
     /**
      * Elimina un atributo de un esquema.
      */
-    void removeAttribute(String attributeId);
+    void remove(String attributeId);
 }

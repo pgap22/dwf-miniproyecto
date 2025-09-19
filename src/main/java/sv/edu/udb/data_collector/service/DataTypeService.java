@@ -1,15 +1,14 @@
 package sv.edu.udb.data_collector.service;
 
-import sv.edu.udb.data_collector.domain.DataType;
+import sv.edu.udb.data_collector.controller.response.DataTypeResponse;
 
 import java.util.List;
 
-
 public interface DataTypeService {
 
-    public List<DataType> listPrimitives();
+    List<DataTypeResponse> listPrimitives();
 
-    public List<DataType> listAll();
+    List<DataTypeResponse> listAll();
 
-    public DataType getById(String id);
+    DataTypeResponse getById(String id);
 }

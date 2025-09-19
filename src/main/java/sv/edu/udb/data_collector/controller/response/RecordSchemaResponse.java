@@ -1,8 +1,14 @@
 package sv.edu.udb.data_collector.controller.response;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Data // Lombok para getters, setters, etc.
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class RecordSchemaResponse {
 
     private String id;
