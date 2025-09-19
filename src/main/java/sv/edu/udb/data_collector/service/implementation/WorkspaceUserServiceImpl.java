@@ -1,11 +1,14 @@
 package sv.edu.udb.data_collector.service.implementation;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.ValidationException;
 import sv.edu.udb.data_collector.controller.response.MemberResponse;
 import sv.edu.udb.data_collector.domain.MemberRole;
 import sv.edu.udb.data_collector.domain.User;
@@ -18,6 +21,7 @@ import sv.edu.udb.data_collector.service.WorkspaceUserService;
 import sv.edu.udb.data_collector.service.mapper.WorkspaceUserMapper;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @Service
 @RequiredArgsConstructor
@@ -38,20 +42,19 @@ public class WorkspaceUserServiceImpl implements WorkspaceUserService {
         User user = userRepository.findByEmail(email.trim())
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
+        if (memberRepository.existsByWorkspaceIdAndUser_Email(workspaceId, email)) {
+            throw new ValidationException("El usuario ya es miembro de este espacio de trabajo.");
+        }
+
         WorkspaceUser member = WorkspaceUser.builder()
                 .workspace(ws)
                 .user(user)
                 .role(MemberRole.MEMBER)
                 .build();
 
-        try {
-            WorkspaceUser saved = memberRepository.save(member);
-            return mapper.toResponse(saved);
-        } catch (DataIntegrityViolationException ex) {
-            // UNIQUE (workspaceId, userId)
-            // Tu RestExceptionHandler ya mapea DataAccessException -> 409
-            throw ex;
-        }
+        WorkspaceUser saved = memberRepository.save(member);
+        return mapper.toResponse(saved);
+
     }
 
     @Override
@@ -69,7 +72,8 @@ public class WorkspaceUserServiceImpl implements WorkspaceUserService {
     @Transactional
     public boolean changeMemberRole(String workspaceId, String userId, MemberRole newRole) {
         int updated = memberRepository.updateRoleByWorkspaceIdAndUserId(workspaceId, userId, newRole);
-        if (updated == 0) throw new EntityNotFoundException("Member not found");
+        if (updated == 0)
+            throw new EntityNotFoundException("Member not found");
         return true;
     }
 
@@ -77,7 +81,8 @@ public class WorkspaceUserServiceImpl implements WorkspaceUserService {
     @Transactional
     public boolean removeMember(String workspaceId, String userId) {
         long deleted = memberRepository.deleteByWorkspaceIdAndUserId(workspaceId, userId);
-        if (deleted == 0) throw new EntityNotFoundException("Member not found");
+        if (deleted == 0)
+            throw new EntityNotFoundException("Member not found");
         return true;
     }
 }
