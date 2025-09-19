@@ -4,7 +4,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
-import sv.edu.udb.data_collector.controller.request.UpdateRecordSchemaRequest;
+import sv.edu.udb.data_collector.controller.request.RecordSchemaRequestCreate;
+import sv.edu.udb.data_collector.controller.request.RecordSchemaRequestUpdate;
 import sv.edu.udb.data_collector.controller.response.RecordSchemaResponse;
 import sv.edu.udb.data_collector.domain.RecordSchema;
 import sv.edu.udb.data_collector.domain.Workspace;
@@ -18,15 +19,14 @@ class RecordSchemaMapperTest {
     private final RecordSchemaMapper mapper = Mappers.getMapper(RecordSchemaMapper.class);
 
     @Test
-    @DisplayName("Debe mapear una entidad RecordScheme a un RecordSchemeResponse correctamente")
-    void shouldMapEntityToResponseDTO() {
-        // Arrange (Organizar)
-        // Creamos los objetos de dominio que servirán como fuente de datos.
+    @DisplayName("Debe mapear una entidad RecordSchema a un RecordSchemaResponse correctamente")
+    void shouldMapEntityToResponse() {
+        // Arrange
         Workspace workspace = Workspace.builder()
                 .id("ws-123")
                 .name("Test Workspace")
                 .build();
-        
+
         RecordSchema entity = RecordSchema.builder()
                 .id("rs-456")
                 .name("Esquema de Prueba")
@@ -34,59 +34,71 @@ class RecordSchemaMapperTest {
                 .workspace(workspace)
                 .build();
 
-        // Act (Actuar)
-        // Ejecutamos el método de mapeo que queremos probar.
-        RecordSchemaResponse dto = mapper.toResponseDTO(entity);
+        // Act
+        RecordSchemaResponse dto = mapper.toResponse(entity);
 
-        // Assert (Afirmar)
-        // Verificamos que cada campo del DTO resultante tenga el valor esperado.
+        // Assert
         assertThat(dto).isNotNull();
         assertThat(dto.getId()).isEqualTo("rs-456");
         assertThat(dto.getName()).isEqualTo("Esquema de Prueba");
         assertThat(dto.getDescription()).isEqualTo("Descripción de prueba");
-        // La prueba más importante: verificar que la regla personalizada @Mapping funciona.
-        assertThat(dto.getWorkspaceId()).isEqualTo("ws-123"); 
+        assertThat(dto.getWorkspaceId()).isEqualTo("ws-123");
+    }
+
+    @Test
+    @DisplayName("Debe mapear un DTO de creación a una entidad RecordSchema")
+    void shouldMapCreateRequestToEntity() {
+        // Arrange
+        RecordSchemaRequestCreate request = new RecordSchemaRequestCreate();
+        request.setName("Nuevo Esquema");
+        request.setDescription("Nueva Descripción");
+        request.setWorkspaceId("ws-987");
+
+        // Act
+        RecordSchema entity = mapper.toRecordSchema(request);
+
+        // Assert
+        assertThat(entity).isNotNull();
+        assertThat(entity.getName()).isEqualTo("Nuevo Esquema");
+        assertThat(entity.getDescription()).isEqualTo("Nueva Descripción");
+        assertThat(entity.getId()).isNull();
+        assertThat(entity.getWorkspace()).isNull();
     }
 
     @Test
     @DisplayName("Debe actualizar una entidad existente desde un DTO de actualización")
     void shouldUpdateEntityFromRequestDTO() {
         // Arrange
-        // Creamos una entidad con datos originales.
         RecordSchema existingEntity = RecordSchema.builder()
                 .id("rs-789")
                 .name("Nombre Antiguo")
                 .description("Descripción Antigua")
                 .workspace(Workspace.builder().id("ws-abc").build())
                 .build();
-        
-        // Creamos el DTO con los datos nuevos.
-        UpdateRecordSchemaRequest requestDTO = new UpdateRecordSchemaRequest();
+
+        RecordSchemaRequestUpdate requestDTO = new RecordSchemaRequestUpdate();
         requestDTO.setName("Nombre Actualizado");
         requestDTO.setDescription("Descripción Actualizada");
 
         // Act
-        // Ejecutamos el método de actualización. Este método no devuelve nada, modifica el objeto existente.
-        mapper.updateFromRequest(requestDTO, existingEntity);
+        mapper.updateRecordSchema(requestDTO, existingEntity);
 
         // Assert
-        // Verificamos que los campos de la entidad original hayan sido modificados.
         assertThat(existingEntity.getName()).isEqualTo("Nombre Actualizado");
         assertThat(existingEntity.getDescription()).isEqualTo("Descripción Actualizada");
-        // También verificamos que los campos que no estaban en el DTO no hayan cambiado.
         assertThat(existingEntity.getId()).isEqualTo("rs-789");
         assertThat(existingEntity.getWorkspace().getId()).isEqualTo("ws-abc");
     }
-    
+
     @Test
     @DisplayName("Debe devolver null si la entidad de entrada es null")
     void shouldReturnNullWhenEntityIsNull() {
         // Arrange
         RecordSchema entity = null;
-        
+
         // Act
-        RecordSchemaResponse dto = mapper.toResponseDTO(entity);
-        
+        RecordSchemaResponse dto = mapper.toResponse(entity);
+
         // Assert
         assertThat(dto).isNull();
     }

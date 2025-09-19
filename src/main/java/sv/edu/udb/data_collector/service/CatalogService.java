@@ -1,24 +1,27 @@
 package sv.edu.udb.data_collector.service;
 
+import sv.edu.udb.data_collector.controller.request.CatalogCreateRequest;
 import sv.edu.udb.data_collector.controller.request.CatalogUpdateRequest;
-import sv.edu.udb.data_collector.domain.Catalog;
-import sv.edu.udb.data_collector.domain.CatalogItem;
+import sv.edu.udb.data_collector.controller.request.CatalogItemCreateRequest;
+import sv.edu.udb.data_collector.controller.request.CatalogItemUpdateRequest;
+import sv.edu.udb.data_collector.controller.response.CatalogResponse;
+import sv.edu.udb.data_collector.controller.response.CatalogItemResponse;
 
 import java.util.List;
 
 public interface CatalogService {
 
     // Catalog
-    Catalog createCatalog(String workspaceId, String name, String description);
-    Catalog updateCatalog(String catalogId, CatalogUpdateRequest request);
+    CatalogResponse createCatalog(CatalogCreateRequest request);
+    CatalogResponse updateCatalog(String catalogId, CatalogUpdateRequest request);
     void deleteCatalog(String catalogId);
-    Catalog getCatalog(String catalogId);
-    List<Catalog> listCatalogs(String workspaceId); // si workspaceId es null, listar todos (según negocio)
+    CatalogResponse getCatalog(String catalogId);
+    List<CatalogResponse> listCatalogs(String workspaceId);
 
     // Items
-    CatalogItem createItem(String catalogId, String value);
-    CatalogItem updateItem(String catalogId, String itemId, String value);
+    CatalogItemResponse createItem(String catalogId, CatalogItemCreateRequest request);
+    CatalogItemResponse updateItem(String catalogId, String itemId, CatalogItemUpdateRequest request);
     void deleteItem(String catalogId, String itemId);
-    CatalogItem getItem(String catalogId, String itemId);
-    List<CatalogItem> listItems(String catalogId);
+    CatalogItemResponse getItem(String catalogId, String itemId);
+    List<CatalogItemResponse> listItems(String catalogId);
 }

@@ -1,89 +1,66 @@
 package sv.edu.udb.data_collector.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
-import sv.edu.udb.data_collector.controller.request.CreateRecordSchemaRequest;
-import sv.edu.udb.data_collector.controller.request.UpdateRecordSchemaRequest;
+import sv.edu.udb.data_collector.controller.request.RecordSchemaRequestCreate;
+import sv.edu.udb.data_collector.controller.request.RecordSchemaRequestUpdate;
 import sv.edu.udb.data_collector.controller.response.RecordSchemaResponse;
-import sv.edu.udb.data_collector.domain.RecordSchema;
 import sv.edu.udb.data_collector.service.RecordSchemaService;
-import sv.edu.udb.data_collector.service.mapper.RecordSchemaMapper;
 
 import java.util.List;
+import java.net.URI;
 
 @RestController
 @RequestMapping("/api/record-schemas")
 @RequiredArgsConstructor
 public class RecordSchemaController {
 
-    private final RecordSchemaService recordSchemeService;
-    private final RecordSchemaMapper recordSchemeMapper;
+    private final RecordSchemaService recordSchemaService;
 
     /**
-     * Crea un nuevo RecordScheme.
-     * Recibe un DTO, llama al servicio y devuelve otro DTO.
+     * Crea un nuevo RecordSchema.
      */
     @PostMapping
-    public ResponseEntity<RecordSchemaResponse> createScheme(@Valid @RequestBody CreateRecordSchemaRequest request) {
-        // 1. Llama al servicio con los datos de la petición
-        RecordSchema createdSchemeEntity = recordSchemeService.create(
-            request.getWorkspaceId(),
-            request.getName(),
-            request.getDescription()
-        );
-        // 2. Mapea la entidad resultante a un DTO de respuesta y la devuelve
-        return new ResponseEntity<>(recordSchemeMapper.toResponseDTO(createdSchemeEntity), HttpStatus.CREATED);
+    public ResponseEntity<RecordSchemaResponse> createScheme(@Valid @RequestBody RecordSchemaRequestCreate request) {
+        RecordSchemaResponse createdResponse = recordSchemaService.create(request);
+        return ResponseEntity
+                .created(URI.create("/api/record-schemas/" + createdResponse.getId()))
+                .body(createdResponse);
     }
 
     /**
      * Obtiene todos los RecordSchemes de un Workspace específico.
      */
     @GetMapping("/workspace/{workspaceId}")
-    public ResponseEntity<List<RecordSchemaResponse>> getSchemesByWorkspace(@PathVariable String workspaceId) {
-        // 1. Obtiene la lista de entidades del servicio
-        List<RecordSchema> schemeEntities = recordSchemeService.findAllByWorkspaceId(workspaceId);
-        // 2. Mapea la lista completa a una lista de DTOs de respuesta
-        return ResponseEntity.ok(recordSchemeMapper.toResponseDTOList(schemeEntities));
+    public List<RecordSchemaResponse> getSchemesByWorkspace(@PathVariable String workspaceId) {
+        return recordSchemaService.findAllByWorkspaceId(workspaceId);
     }
 
     /**
-     * Obtiene un RecordScheme por su ID.
+     * Obtiene un RecordSchema por su ID.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<RecordSchemaResponse> getSchemeById(@PathVariable String id) {
-        return recordSchemeService.findById(id)
-                .map(recordSchemeMapper::toResponseDTO) // 3. Mapea la entidad a DTO si la encuentra
-                .map(ResponseEntity::ok) // 4. Envuelve el DTO en una respuesta 200 OK
-                .orElse(ResponseEntity.notFound().build()); // 5. Si no, devuelve 404
+    public RecordSchemaResponse getSchemeById(@PathVariable String id) {
+        return recordSchemaService.findById(id);
     }
 
     /**
-     * Actualiza un RecordScheme existente.
+     * Actualiza un RecordSchema existente.
      */
     @PutMapping("/{id}")
-    public ResponseEntity<RecordSchemaResponse> updateScheme(@PathVariable String id, @Valid @RequestBody UpdateRecordSchemaRequest request) {
-        // Crea un objeto RecordScheme temporal con los datos a actualizar
-        RecordSchema dataToUpdate = RecordSchema.builder()
-                .name(request.getName())
-                .description(request.getDescription())
-                .build();
-        
-        // 1. Llama al servicio para realizar la actualización
-        RecordSchema updatedSchemeEntity = recordSchemeService.update(id, dataToUpdate);
-        // 2. Mapea la entidad actualizada a un DTO de respuesta
-        return ResponseEntity.ok(recordSchemeMapper.toResponseDTO(updatedSchemeEntity));
+    public RecordSchemaResponse updateScheme(@PathVariable String id, @Valid @RequestBody RecordSchemaRequestUpdate request) {
+        return recordSchemaService.update(id, request);
     }
 
     /**
-     * Elimina un RecordScheme.
+     * Elimina un RecordSchema.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteScheme(@PathVariable String id) {
-        recordSchemeService.delete(id);
-        return ResponseEntity.noContent().build(); // Devuelve 204 No Content
+        recordSchemaService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

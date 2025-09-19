@@ -3,6 +3,7 @@ package sv.edu.udb.data_collector.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration;
@@ -13,40 +14,43 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
-import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-
-import sv.edu.udb.data_collector.configuration.RestExceptionHandler;
-import sv.edu.udb.data_collector.controller.request.CreateAttributeRequest;
-import sv.edu.udb.data_collector.controller.response.AttributeResponse;
-import sv.edu.udb.data_collector.domain.RecordSchemaAttribute;
+import org.springframework.web.server.ResponseStatusException;
+import sv.edu.udb.data_collector.controller.request.RecordSchemaAttributeCreateRequest;
+import sv.edu.udb.data_collector.controller.request.RecordSchemaAttributeUpdateRequest;
+import sv.edu.udb.data_collector.controller.response.RecordSchemaAttributeResponse;
 import sv.edu.udb.data_collector.security.SecurityConfig;
 import sv.edu.udb.data_collector.security.jwt.JwtAuthenticationFilter;
 import sv.edu.udb.data_collector.service.RecordSchemaAttributeService;
-import sv.edu.udb.data_collector.service.mapper.RecordSchemaAttributeMapper;
 
-import java.util.Optional;
+import java.util.Collections;
+import java.util.List;
 
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.hamcrest.Matchers.is;
 
 @WebMvcTest(
-    controllers = RecordSchemaAttributeController.class,
-    excludeAutoConfiguration = {
+        controllers = RecordSchemaAttributeController.class,
+        excludeAutoConfiguration = {
                 SecurityAutoConfiguration.class,
                 SecurityFilterAutoConfiguration.class,
                 OAuth2ResourceServerAutoConfiguration.class
         },
-      excludeFilters = @ComponentScan.Filter(
+        excludeFilters = @ComponentScan.Filter(
                 type = FilterType.ASSIGNABLE_TYPE,
-                classes = { SecurityConfig.class, JwtAuthenticationFilter.class }
+                classes = {SecurityConfig.class, JwtAuthenticationFilter.class}
         )
-    )
-@Import(RestExceptionHandler.class)
+)
 @AutoConfigureMockMvc(addFilters = false)
 class RecordSchemaAttributeControllerTest {
 
@@ -56,83 +60,122 @@ class RecordSchemaAttributeControllerTest {
     @MockBean
     private RecordSchemaAttributeService attributeService;
 
-    @MockBean
-    private RecordSchemaAttributeMapper attributeMapper;
-
     @Autowired
     private ObjectMapper objectMapper;
 
-    private RecordSchemaAttribute attributeEntity;
-    private AttributeResponse attributeResponse;
+    private RecordSchemaAttributeResponse attributeResponse;
 
     @BeforeEach
     void setUp() {
-        // Arrange (preparación común)
-        attributeEntity = RecordSchemaAttribute.builder().id("attr-1").name("Test Attribute").build();
-
-        attributeResponse = new AttributeResponse();
-        attributeResponse.setId("attr-1");
-        attributeResponse.setName("Test Attribute");
-        attributeResponse.setRecordSchemaId("schema-1");
+        attributeResponse = RecordSchemaAttributeResponse.builder()
+                .id("attr-1")
+                .name("Test Attribute")
+                .recordSchemaId("schema-1")
+                .isRequired(true)
+                .allowMultiple(false)
+                .dataTypeId("dt-1")
+                .build();
     }
 
-    @Test
-    @DisplayName("POST /record-schemas/{id}/attributes - Debe crear un atributo y devolver 201 Created")
-    void addAttributeToSchema_shouldReturnCreated() throws Exception {
-        // Arrange
-        CreateAttributeRequest request = new CreateAttributeRequest();
-        request.setName("Test Attribute");
-        request.setDataTypeId("dt-1");
-        request.setIsRequired(true);
-        request.setAllowMultiple(false);
-        
-        given(attributeService.addAttributeToSchema(any(String.class), any(CreateAttributeRequest.class)))
-                .willReturn(attributeEntity);
-        given(attributeMapper.toResponse(any(RecordSchemaAttribute.class)))
-                .willReturn(attributeResponse);
+    @Nested
+    @DisplayName("Pruebas de endpoints de Atributos")
+    class AttributeEndpointsTests {
+        @Test
+        @DisplayName("POST /record-schemas/{id}/attributes - Debe crear un atributo y devolver 201 Created")
+        void addAttributeToSchema_shouldReturnCreated() throws Exception {
+            // Arrange
+            RecordSchemaAttributeCreateRequest request = new RecordSchemaAttributeCreateRequest();
+            request.setName("Test Attribute");
+            request.setDataTypeId("dt-1");
+            request.setIsRequired(true);
+            request.setAllowMultiple(false);
 
-        // Act & Assert
-        mockMvc.perform(post("/api/record-schemas/{schemaId}/attributes", "schema-1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id", is("attr-1")))
-                .andExpect(jsonPath("$.name", is("Test Attribute")));
-    }
+            given(attributeService.add(any(String.class), any(RecordSchemaAttributeCreateRequest.class)))
+                    .willReturn(attributeResponse);
 
-    @Test
-    @DisplayName("GET /attributes/{id} - Debe devolver un atributo por ID y 200 OK")
-    void getAttributeById_whenFound_shouldReturnOk() throws Exception {
-        // Arrange
-        given(attributeService.findAttributeById("attr-1")).willReturn(Optional.of(attributeEntity));
-        given(attributeMapper.toResponse(attributeEntity)).willReturn(attributeResponse);
+            // Act & Assert
+            mockMvc.perform(post("/api/record-schemas/{schemaId}/attributes", "schema-1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.id", is("attr-1")))
+                    .andExpect(jsonPath("$.name", is("Test Attribute")));
+        }
 
-        // Act & Assert
-        mockMvc.perform(get("/api/attributes/{attributeId}", "attr-1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is("attr-1")));
-    }
+        @Test
+        @DisplayName("GET /attributes/{id} - Debe devolver un atributo por ID y 200 OK")
+        void getAttributeById_whenFound_shouldReturnOk() throws Exception {
+            // Arrange
+            given(attributeService.findById(anyString())).willReturn(attributeResponse);
 
-    @Test
-    @DisplayName("GET /attributes/{id} - Debe devolver 404 Not Found si el atributo no existe")
-    void getAttributeById_whenNotFound_shouldReturnNotFound() throws Exception {
-        // Arrange
-        given(attributeService.findAttributeById("attr-inexistente")).willReturn(Optional.empty());
+            // Act & Assert
+            mockMvc.perform(get("/api/attributes/{attributeId}", "attr-1"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id", is("attr-1")));
+        }
 
-        // Act & Assert
-        mockMvc.perform(get("/api/attributes/{attributeId}", "attr-inexistente"))
-                .andExpect(status().isNotFound());
-    }
+        @Test
+        @DisplayName("GET /attributes/{id} - Debe devolver 404 Not Found si el atributo no existe")
+        void getAttributeById_whenNotFound_shouldReturnNotFound() throws Exception {
+            // Arrange
+            given(attributeService.findById(anyString()))
+                    .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-    @Test
-    @DisplayName("DELETE /attributes/{id} - Debe eliminar un atributo y devolver 204 No Content")
-    void removeAttribute_shouldReturnNoContent() throws Exception {
-        // Arrange
-        // No se necesita 'given' porque el método del servicio devuelve void.
-        // Mockito por defecto no hace nada para métodos void, lo cual es perfecto.
-        
-        // Act & Assert
-        mockMvc.perform(delete("/api/attributes/{attributeId}", "attr-1"))
-                .andExpect(status().isNoContent());
+            // Act & Assert
+            mockMvc.perform(get("/api/attributes/{attributeId}", "attr-inexistente"))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("GET /record-schemas/{schemaId}/attributes - Debe devolver una lista de atributos y 200 OK")
+        void getAttributesBySchema_shouldReturnOk() throws Exception {
+            // Arrange
+            List<RecordSchemaAttributeResponse> attributes = Collections.singletonList(attributeResponse);
+            given(attributeService.findBySchemaId(anyString())).willReturn(attributes);
+
+            // Act & Assert
+            mockMvc.perform(get("/api/record-schemas/{schemaId}/attributes", "schema-1"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$", hasSize(1)))
+                    .andExpect(jsonPath("$[0].id", is("attr-1")));
+        }
+
+        @Test
+        @DisplayName("PATCH /attributes/{id} - Debe actualizar un atributo y devolver 200 OK")
+        void updateAttribute_shouldReturnOk() throws Exception {
+            // Arrange
+            RecordSchemaAttributeUpdateRequest request = new RecordSchemaAttributeUpdateRequest();
+            request.setName("Updated Name");
+
+            RecordSchemaAttributeResponse updatedResponse = RecordSchemaAttributeResponse.builder()
+                    .id("attr-1")
+                    .name("Updated Name")
+                    .recordSchemaId("schema-1")
+                    .build();
+
+            given(attributeService.update(anyString(), any(RecordSchemaAttributeUpdateRequest.class)))
+                    .willReturn(updatedResponse);
+
+            // Act & Assert
+            mockMvc.perform(patch("/api/attributes/{attributeId}", "attr-1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id", is("attr-1")))
+                    .andExpect(jsonPath("$.name", is("Updated Name")));
+        }
+
+        @Test
+        @DisplayName("DELETE /attributes/{id} - Debe eliminar un atributo y devolver 204 No Content")
+        void removeAttribute_shouldReturnNoContent() throws Exception {
+            // Arrange
+            doNothing().when(attributeService).remove(anyString());
+
+            // Act & Assert
+            mockMvc.perform(delete("/api/attributes/{attributeId}", "attr-1"))
+                    .andExpect(status().isNoContent());
+
+            verify(attributeService, times(1)).remove("attr-1");
+        }
     }
 }

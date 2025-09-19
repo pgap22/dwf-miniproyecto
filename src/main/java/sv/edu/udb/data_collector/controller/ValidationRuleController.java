@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
 import sv.edu.udb.data_collector.controller.response.ValidationRuleResponse;
 import sv.edu.udb.data_collector.service.ValidationRuleService;
-import sv.edu.udb.data_collector.service.mapper.ValidationRuleMapper;
 
 @RestController
 @RequestMapping("/api/validation-rules")
@@ -17,15 +16,14 @@ import sv.edu.udb.data_collector.service.mapper.ValidationRuleMapper;
 public class ValidationRuleController {
 
     private final ValidationRuleService service;
-    private final ValidationRuleMapper mapper;
 
     @GetMapping
     public List<ValidationRuleResponse> list() {
-        return mapper.toResponseList(service.findAll());
+        return service.findAll();
     }
 
     @GetMapping("/{id}")
     public ValidationRuleResponse get(@PathVariable String id) {
-        return mapper.toResponse(service.findById(id));
+        return service.findById(id);
     }
 }
