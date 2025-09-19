@@ -1,5 +1,6 @@
 package sv.edu.udb.data_collector.service;
 
+import sv.edu.udb.data_collector.controller.request.CatalogUpdateRequest;
 import sv.edu.udb.data_collector.domain.Catalog;
 import sv.edu.udb.data_collector.domain.CatalogItem;
 
@@ -9,7 +10,7 @@ public interface CatalogService {
 
     // Catalog
     Catalog createCatalog(String workspaceId, String name, String description);
-    Catalog updateCatalog(String catalogId, String name, String description);
+    Catalog updateCatalog(String catalogId, CatalogUpdateRequest request);
     void deleteCatalog(String catalogId);
     Catalog getCatalog(String catalogId);
     List<Catalog> listCatalogs(String workspaceId); // si workspaceId es null, listar todos (según negocio)
