@@ -45,7 +45,7 @@ class RecordSchemaAttributeRepositoryTest {
         entityManager.persist(schema1);
         entityManager.persist(schema2);
 
-        dataType = DataType.builder().id("text").name("Texto").kind("string").build();
+        dataType = DataType.builder().name("Texto").kind("string").build();
         entityManager.persist(dataType);
         
         catalog = Catalog.builder().name("Ciudades").workspace(workspace).build();
