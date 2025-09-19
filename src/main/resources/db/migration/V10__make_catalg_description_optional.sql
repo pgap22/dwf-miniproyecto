@@ -1,0 +1,1 @@
+ALTER TABLE catalogs MODIFY description TEXT NULL;

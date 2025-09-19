@@ -37,7 +37,7 @@ public class CatalogController {
     @PutMapping("/{catalogId}")
     public CatalogResponse update(@PathVariable String catalogId,
                                   @Valid @RequestBody CatalogUpdateRequest req) {
-        return catalogMapper.toResponse(service.updateCatalog(catalogId, req.getName(), req.getDescription()));
+        return catalogMapper.toResponse(service.updateCatalog(catalogId, req));
     }
 
     @DeleteMapping("/{catalogId}")

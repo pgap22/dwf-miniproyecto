@@ -27,7 +27,7 @@ public class Catalog {
     @Column(nullable = false, length = 120)
     private String name;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(nullable = true,columnDefinition = "TEXT")
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)

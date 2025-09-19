@@ -7,7 +7,6 @@ import lombok.Data;
 public class CatalogCreateRequest {
     @NotBlank
     private String name;
-    @NotBlank
     private String description;
     @NotBlank
     private String workspaceId; 

@@ -32,10 +32,10 @@ class DataTypeRepositoryTest {
         // Creamos y guardamos un conjunto de datos de prueba.
         // El orden de persistencia es aleatorio para asegurar que el test
         // comprueba el ordenamiento del método del repositorio.
-        entityManager.persist(DataType.builder().id("dt-3").name("NUMBER").kind("number").build());
-        entityManager.persist(DataType.builder().id("dt-1").name("STRING").kind("string").build());
-        entityManager.persist(DataType.builder().id("dt-4").name("CATALOG").kind("catalog").build());
-        entityManager.persist(DataType.builder().id("dt-2").name("BOOLEAN").kind("boolean").build());
+        entityManager.persist(DataType.builder().name("NUMBER").kind("number").build());
+        entityManager.persist(DataType.builder().name("STRING").kind("string").build());
+        entityManager.persist(DataType.builder().name("CATALOG").kind("catalog").build());
+        entityManager.persist(DataType.builder().name("BOOLEAN").kind("boolean").build());
         
         entityManager.flush();
     }
