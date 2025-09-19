@@ -1,18 +1,14 @@
 package sv.edu.udb.data_collector.service.mapper;
 
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
 import sv.edu.udb.data_collector.controller.response.DataTypeResponse;
 import sv.edu.udb.data_collector.domain.DataType;
+import java.util.List;
 
-@Component
-public class DataTypeMapper {
+@Mapper(componentModel = "spring")
+public interface DataTypeMapper {
 
-    public DataTypeResponse toResponse(DataType e) {
-        if (e == null) return null;
-        return DataTypeResponse.builder()
-                .id(e.getId())
-                .name(e.getName())
-                .kind(e.getKind())
-                .build();
-    }
+    DataTypeResponse toResponse(DataType entity);
+    
+    List<DataTypeResponse> toResponseList(List<DataType> entities);
 }
