@@ -56,7 +56,7 @@ class WorkspaceUserMapperTest {
         assertThat(dto.getUserId()).isEqualTo(user.getId());
         assertThat(dto.getEmail()).isEqualTo("alice@example.com");
         assertThat(dto.getName()).isEqualTo("Alice");
-        assertThat(dto.getRole()).isEqualTo(MemberRole.ADMIN.name());
+        assertThat(dto.getRole()).isEqualTo(MemberRole.ADMIN);
         assertThat(dto.getJoinedAt()).isEqualTo(joined);
     }
 

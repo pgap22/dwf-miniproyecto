@@ -49,7 +49,7 @@ class WorkspaceUserServiceImplTest {
                 .id("m-1").workspace(ws).user(user).role(MemberRole.MEMBER).createdAt(Instant.now()).build();
         var response = MemberResponse.builder()
                 .id("m-1").userId("user-1").email("alice@example.com").name("Alice")
-                .role(MemberRole.MEMBER.name()).joinedAt(member.getCreatedAt())
+                .role(MemberRole.MEMBER).joinedAt(member.getCreatedAt())
                 .build();
 
         when(workspaceRepository.findById("ws-1")).thenReturn(Optional.of(ws));
@@ -112,7 +112,7 @@ class WorkspaceUserServiceImplTest {
                 .id("m-1").workspace(ws).user(user).role(MemberRole.MEMBER).createdAt(Instant.now()).build();
         var dto = MemberResponse.builder()
                 .id("m-1").userId("u-1").email("a@e.com").name("A")
-                .role("MEMBER").joinedAt(member.getCreatedAt()).build();
+                .role(MemberRole.MEMBER).joinedAt(member.getCreatedAt()).build();
 
         when(workspaceRepository.findById("ws-1")).thenReturn(Optional.of(ws));
         when(memberRepository.findByWorkspaceId("ws-1")).thenReturn(List.of(member));
