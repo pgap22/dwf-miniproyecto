@@ -15,6 +15,8 @@ public interface WorkspaceUserRepository extends JpaRepository<WorkspaceUser, St
     List<WorkspaceUser> findByWorkspaceId(String workspaceId);
 
     boolean existsByWorkspaceIdAndUserId(String workspaceId, String userId);
+    
+    boolean existsByWorkspaceIdAndUser_Email(String workspaceId, String email);
 
     Optional<WorkspaceUser> findByWorkspaceIdAndUserId(String workspaceId, String userId);
 
