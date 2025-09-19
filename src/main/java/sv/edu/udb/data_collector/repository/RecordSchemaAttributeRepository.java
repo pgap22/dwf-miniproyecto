@@ -11,6 +11,9 @@ import java.util.Optional;
 @Repository
 public interface RecordSchemaAttributeRepository extends JpaRepository<RecordSchemaAttribute, String> {
 
+    @Override
+    @EntityGraph(attributePaths = {"dataType"})
+    Optional<RecordSchemaAttribute> findById(String id);
 
     @EntityGraph(attributePaths = {"dataType"})
     List<RecordSchemaAttribute> findByRecordSchemaId(String recordSchemaId);

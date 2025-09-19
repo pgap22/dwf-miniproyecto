@@ -60,7 +60,7 @@ public class RecordSchemaAttributeController {
     /**
      * Actualiza un atributo existente.
      */
-    @PutMapping("/attributes/{attributeId}")
+    @PatchMapping("/attributes/{attributeId}")
     public ResponseEntity<AttributeResponse> updateAttribute(
             @PathVariable String attributeId,
             @Valid @RequestBody UpdateAttributeRequest request) {
