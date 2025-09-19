@@ -79,11 +79,11 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("GET /users/{id} → 200 y body esperado")
+    @DisplayName("GET /api/users/{id} → 200 y body esperado")
     void get_by_id_ok() throws Exception {
         // ---------- Arrange ----------
         String id = USER_ID_1;
-        String url = "/users/" + id;
+        String url = "/api/users/" + id;
         UserResponse expected = new UserResponse(USER_ID_1, USER_NAME_BART, EMAIL_BART);
         when(userService.findById(id)).thenReturn(expected);
 
@@ -192,11 +192,11 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("GET /users/{id} → 404 cuando no existe")
+    @DisplayName("GET /api/users/{id} → 404 cuando no existe")
     void get_by_id_404() throws Exception {
         // ---------- Arrange ----------
         String id = USER_ID_404;
-        String url = "/users/" + id;
+        String url = "/api/users/" + id;
         when(userService.findById(id)).thenThrow(new EntityNotFoundException("not found"));
 
         // ---------- Act ----------
