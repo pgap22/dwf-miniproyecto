@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 @Data 
-public class CreateRecordSchemaRequest {
+public class RecordSchemaRequestCreate {
     @NotBlank
     private String workspaceId;
 

@@ -2,9 +2,9 @@ package sv.edu.udb.data_collector.service;
 
 import java.util.List;
 
-import sv.edu.udb.data_collector.domain.ValidationRule;
+import sv.edu.udb.data_collector.controller.response.ValidationRuleResponse;
 
 public interface ValidationRuleService {
-    List<ValidationRule> findAll();
-    ValidationRule findById(String id);
+    List<ValidationRuleResponse> findAll();
+    ValidationRuleResponse findById(String id);
 }

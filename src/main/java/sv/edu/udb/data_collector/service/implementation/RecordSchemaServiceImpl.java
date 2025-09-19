@@ -1,93 +1,100 @@
 package sv.edu.udb.data_collector.service.implementation;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import sv.edu.udb.data_collector.controller.request.RecordSchemaRequestCreate;
+import sv.edu.udb.data_collector.controller.request.RecordSchemaRequestUpdate;
+import sv.edu.udb.data_collector.controller.response.RecordSchemaResponse;
 import sv.edu.udb.data_collector.domain.RecordSchema;
 import sv.edu.udb.data_collector.domain.Workspace;
 import sv.edu.udb.data_collector.repository.RecordSchemaRepository;
 import sv.edu.udb.data_collector.repository.WorkspaceRepository;
 import sv.edu.udb.data_collector.service.RecordSchemaService;
+import sv.edu.udb.data_collector.service.mapper.RecordSchemaMapper;
 
 import java.util.List;
 import java.util.Optional;
 
-@Service // Anotación para que Spring lo reconozca como un bean de servicio
-@RequiredArgsConstructor // Lombok: crea un constructor con los campos 'final'
+@Service
+@RequiredArgsConstructor
 public class RecordSchemaServiceImpl implements RecordSchemaService {
 
-    // Inyección de dependencias a través del constructor (manejado por Lombok)
     private final RecordSchemaRepository recordSchemeRepository;
     private final WorkspaceRepository workspaceRepository;
+    private final RecordSchemaMapper recordSchemaMapper;
 
     @Override
-    @Transactional // Asegura que toda la operación se ejecute en una sola transacción
-    public RecordSchema create(String workspaceId, String name, String description) {
-        // 1. Validar que el Workspace exista
-        Workspace workspace = workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new EntityNotFoundException("Workspace no encontrado con el id: " + workspaceId));
+    @Transactional
+    public RecordSchemaResponse create(RecordSchemaRequestCreate request) {
+        // 1. Obtener el workspace
+        Workspace workspace = workspaceRepository.findById(request.getWorkspaceId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace no encontrado con el id: " + request.getWorkspaceId()));
 
         // 2. Validar que no exista un esquema con el mismo nombre en ese workspace
-        recordSchemeRepository.findByWorkspaceIdAndName(workspaceId, name)
+        recordSchemeRepository.findByWorkspaceIdAndName(request.getWorkspaceId(), request.getName())
                 .ifPresent(scheme -> {
-                    throw new IllegalStateException("Ya existe un esquema con el nombre '" + name + "' en este workspace.");
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe un esquema con el nombre '" + request.getName() + "' en este workspace.");
                 });
 
-        // 3. Crear y guardar la nueva entidad
-        RecordSchema newScheme = RecordSchema.builder()
-                .name(name)
-                .description(description)
-                .workspace(workspace)
-                .build();
+        // 3. Mapear el DTO a la entidad y asignar el workspace
+        RecordSchema newScheme = recordSchemaMapper.toRecordSchema(request);
+        newScheme.setWorkspace(workspace);
 
-        return recordSchemeRepository.save(newScheme);
-    }
-
-    @Override
-    @Transactional(readOnly = true) // Optimización para operaciones de solo lectura
-    public List<RecordSchema> findAllByWorkspaceId(String workspaceId) {
-        return recordSchemeRepository.findByWorkspaceId(workspaceId);
+        // 4. Guardar y mapear la entidad de vuelta a un DTO de respuesta
+        RecordSchema savedScheme = recordSchemeRepository.save(newScheme);
+        return recordSchemaMapper.toResponse(savedScheme);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<RecordSchema> findById(String id) {
-        return recordSchemeRepository.findById(id);
+    public List<RecordSchemaResponse> findAllByWorkspaceId(String workspaceId) {
+        List<RecordSchema> schemes = recordSchemeRepository.findByWorkspaceId(workspaceId);
+        return recordSchemaMapper.toResponseList(schemes);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public RecordSchemaResponse findById(String id) {
+        RecordSchema scheme = recordSchemeRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "RecordSchema no encontrado con el id: " + id));
+        return recordSchemaMapper.toResponse(scheme);
     }
 
     @Override
     @Transactional
-    public RecordSchema update(String id, RecordSchema updatedData) {
-        // 1. Encontrar el esquema existente o lanzar una excepción si no se encuentra
+    public RecordSchemaResponse update(String id, RecordSchemaRequestUpdate request) {
+        // 1. Encontrar la entidad existente
         RecordSchema existingScheme = recordSchemeRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("RecordScheme no encontrado con el id: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "RecordSchema no encontrado con el id: " + id));
 
         // 2. Validar si el nombre ha cambiado y si el nuevo nombre ya está en uso
-        if (!existingScheme.getName().equals(updatedData.getName())) {
-             recordSchemeRepository.findByWorkspaceIdAndName(existingScheme.getWorkspace().getId(), updatedData.getName())
+        if (request.getName() != null && !request.getName().equals(existingScheme.getName())) {
+             recordSchemeRepository.findByWorkspaceIdAndName(existingScheme.getWorkspace().getId(), request.getName())
                 .ifPresent(scheme -> {
-                    throw new IllegalStateException("El nombre '" + updatedData.getName() + "' ya está en uso en este workspace.");
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "El nombre '" + request.getName() + "' ya está en uso en este workspace.");
                 });
         }
         
-        // 3. Actualizar los campos permitidos
-        existingScheme.setName(updatedData.getName());
-        existingScheme.setDescription(updatedData.getDescription());
+        // 3. Mapear los campos permitidos del DTO a la entidad
+        recordSchemaMapper.updateRecordSchema(request, existingScheme);
 
-        // 4. Guardar los cambios (JPA lo hace automáticamente al final de la transacción, 
-        // pero es buena práctica llamarlo explícitamente para mayor claridad)
-        return recordSchemeRepository.save(existingScheme);
+        // 4. Guardar y mapear la entidad de vuelta a un DTO de respuesta
+        RecordSchema updatedScheme = recordSchemeRepository.save(existingScheme);
+        return recordSchemaMapper.toResponse(updatedScheme);
     }
 
     @Override
     @Transactional
     public void delete(String id) {
-        // 1. Verificar si el esquema existe antes de intentar borrarlo
-        if (!recordSchemeRepository.existsById(id)) {
-            throw new EntityNotFoundException("No se puede eliminar. RecordScheme no encontrado con el id: " + id);
+        // En lugar de findById y existsById, podemos usar deleteById directamente
+        // y manejar la excepción de base de datos o verificar primero
+        Optional<RecordSchema> scheme = recordSchemeRepository.findById(id);
+        if (scheme.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se puede eliminar. RecordSchema no encontrado con el id: " + id);
         }
-        // 2. Eliminar la entidad
-        recordSchemeRepository.deleteById(id);
+        recordSchemeRepository.delete(scheme.get());
     }
 }

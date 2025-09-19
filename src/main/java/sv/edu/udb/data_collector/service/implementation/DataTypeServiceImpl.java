@@ -2,33 +2,44 @@ package sv.edu.udb.data_collector.service.implementation;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import sv.edu.udb.data_collector.controller.response.DataTypeResponse;
 import sv.edu.udb.data_collector.domain.DataType;
 import sv.edu.udb.data_collector.repository.DataTypeRepository;
 import sv.edu.udb.data_collector.service.DataTypeService;
+import sv.edu.udb.data_collector.service.mapper.DataTypeMapper;
 
 import java.util.List;
 
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class DataTypeServiceImpl implements DataTypeService {
 
     private final DataTypeRepository repository;
+    private final DataTypeMapper dataTypeMapper;
 
-    /**
-     * Primitivos = todos excepto 'CATALOG'
-     */
-    public List<DataType> listPrimitives() {
-        return repository.findAllByNameNotOrderByNameAsc("CATALOG");
+    @Override
+    public List<DataTypeResponse> listPrimitives() {
+        return repository.findAllByNameNotOrderByNameAsc("CATALOG").stream()
+                .map(dataTypeMapper::toResponse)
+                .toList();
     }
 
-    /**
-     * (Opcional) todos, por si luego lo necesitas
-     */
-    public List<DataType> listAll() {
-        return repository.findAllByOrderByNameAsc();
+    @Override
+    public List<DataTypeResponse> listAll() {
+        return repository.findAllByOrderByNameAsc().stream()
+                .map(dataTypeMapper::toResponse)
+                .toList();
     }
 
-    public DataType getById(String id) {
-        return repository.findById(id).orElse(null);
+    @Override
+    public DataTypeResponse getById(String id) {
+        DataType dataType = repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "DataType not found with id: " + id));
+        return dataTypeMapper.toResponse(dataType);
     }
 }

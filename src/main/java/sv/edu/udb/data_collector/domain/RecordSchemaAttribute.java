@@ -33,7 +33,7 @@ public class RecordSchemaAttribute {
      */
     @Column(nullable = false)
     @Builder.Default
-    private boolean isRequired = false;
+    private Boolean isRequired = false;
 
     /**
      * Indica si el atributo puede tener múltiples valores.
@@ -41,7 +41,7 @@ public class RecordSchemaAttribute {
      */
     @Column(nullable = false)
     @Builder.Default
-    private boolean allowMultiple = false;
+    private Boolean allowMultiple = false;
     
     /**
      * Relación con el RecordScheme al que pertenece este atributo.

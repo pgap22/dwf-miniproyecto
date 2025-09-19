@@ -9,7 +9,7 @@ import lombok.Setter;
 @Data
 @Getter
 @Setter
-public class CreateAttributeRequest {
+public class RecordSchemaAttributeCreateRequest {
 
     @NotBlank(message = "El nombre no puede estar vacío.")
     private String name;

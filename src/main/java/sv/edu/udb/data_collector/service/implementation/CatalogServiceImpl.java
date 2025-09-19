@@ -5,8 +5,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import jakarta.persistence.EntityNotFoundException;
+import sv.edu.udb.data_collector.controller.request.CatalogCreateRequest;
+import sv.edu.udb.data_collector.controller.request.CatalogItemCreateRequest;
+import sv.edu.udb.data_collector.controller.request.CatalogItemUpdateRequest;
 import sv.edu.udb.data_collector.controller.request.CatalogUpdateRequest;
+import sv.edu.udb.data_collector.controller.response.CatalogItemResponse;
+import sv.edu.udb.data_collector.controller.response.CatalogResponse;
 import sv.edu.udb.data_collector.domain.Catalog;
 import sv.edu.udb.data_collector.domain.CatalogItem;
 import sv.edu.udb.data_collector.domain.Workspace;
@@ -14,6 +18,8 @@ import sv.edu.udb.data_collector.repository.CatalogItemRepository;
 import sv.edu.udb.data_collector.repository.CatalogRepository;
 import sv.edu.udb.data_collector.repository.WorkspaceRepository;
 import sv.edu.udb.data_collector.service.CatalogService;
+import sv.edu.udb.data_collector.service.mapper.CatalogItemMapper;
+import sv.edu.udb.data_collector.service.mapper.CatalogMapper;
 
 import java.util.List;
 
@@ -27,112 +33,105 @@ public class CatalogServiceImpl implements CatalogService {
     private final CatalogRepository catalogRepository;
     private final CatalogItemRepository itemRepository;
     private final WorkspaceRepository workspaceRepository;
+    private final CatalogMapper catalogMapper;
+    private final CatalogItemMapper itemMapper;
 
     // ----- Catalog -----
     @Override
-    public Catalog createCatalog(String workspaceId, String name, String description) {
+    public CatalogResponse createCatalog(CatalogCreateRequest request) {
         Workspace ws = null;
-        if (workspaceId != null && !workspaceId.isBlank()) {
-            ws = workspaceRepository.findById(workspaceId)
+        if (request.getWorkspaceId() != null && !request.getWorkspaceId().isBlank()) {
+            ws = workspaceRepository.findById(request.getWorkspaceId())
                     .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Workspace not found"));
-            if (catalogRepository.existsByNameAndWorkspaceId(name, workspaceId)) {
+            if (catalogRepository.existsByNameAndWorkspaceId(request.getName(), request.getWorkspaceId())) {
                 throw new ResponseStatusException(CONFLICT, "Catalog name already exists in this workspace");
             }
         }
 
-        Catalog catalog = Catalog.builder()
-                .name(name)
-                .description(description)
-                .workspace(ws)
-                .build();
+        Catalog catalog = catalogMapper.toCatalog(request);
+        catalog.setWorkspace(ws);
 
-        return catalogRepository.save(catalog);
+        Catalog createdCatalog = catalogRepository.save(catalog);
+        return catalogMapper.toResponse(createdCatalog);
     }
 
     @Override
     @Transactional
-    public Catalog updateCatalog(String catalogId, CatalogUpdateRequest request) {
-        // 1. Obtenemos la entidad existente de la base de datos.
+    public CatalogResponse updateCatalog(String catalogId, CatalogUpdateRequest request) {
         Catalog catalog = catalogRepository.findById(catalogId)
-                .orElseThrow(() -> new EntityNotFoundException("Catalog not found with id: " + catalogId));
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Catalog not found with id: " + catalogId));
 
-        // 2. Actualizamos el nombre solo si se proporcionó uno nuevo.
-        if (request.getName() != null && !request.getName().isBlank()) {
-            // Validamos que el nuevo nombre no cree un duplicado.
-            String wsId = catalog.getWorkspace().getId();
-            if (!catalog.getName().equalsIgnoreCase(request.getName()) &&
-                    catalogRepository.existsByNameAndWorkspaceId(request.getName(), wsId)) {
-
-                throw new IllegalStateException("Catalog name already exists in this workspace");
+        // Validación de unicidad si el nombre cambia
+        if (request.getName() != null && !request.getName().isBlank() && !catalog.getName().equalsIgnoreCase(request.getName())) {
+            String wsId = (catalog.getWorkspace() != null) ? catalog.getWorkspace().getId() : null;
+            if (catalogRepository.existsByNameAndWorkspaceId(request.getName(), wsId)) {
+                throw new ResponseStatusException(CONFLICT, "Catalog name already exists in this workspace");
             }
-            catalog.setName(request.getName());
         }
-
-        // 3. Actualizamos la descripción solo si se proporcionó una nueva.
-        if (request.getDescription() != null) {
-            catalog.setDescription(request.getDescription());
-        }
-
-        // 4. Guardamos la entidad con los cambios aplicados.
-        return catalogRepository.save(catalog);
+        
+        catalogMapper.updateCatalog(request, catalog);
+        Catalog updatedCatalog = catalogRepository.save(catalog);
+        return catalogMapper.toResponse(updatedCatalog);
     }
 
     @Override
     public void deleteCatalog(String catalogId) {
         Catalog catalog = catalogRepository.findById(catalogId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Catalog not found"));
-        catalogRepository.delete(catalog); // items se borran por cascade
+        catalogRepository.delete(catalog);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Catalog getCatalog(String catalogId) {
-        return catalogRepository.findById(catalogId)
+    public CatalogResponse getCatalog(String catalogId) {
+        Catalog catalog = catalogRepository.findById(catalogId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Catalog not found"));
+        return catalogMapper.toResponse(catalog);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Catalog> listCatalogs(String workspaceId) {
+    public List<CatalogResponse> listCatalogs(String workspaceId) {
         if (workspaceId == null || workspaceId.isBlank()) {
             return catalogRepository.findAll().stream()
                     .sorted((a, b) -> a.getName().compareToIgnoreCase(b.getName()))
+                    .map(catalogMapper::toResponse)
                     .toList();
         }
-        return catalogRepository.findAllByWorkspaceIdOrderByNameAsc(workspaceId);
+        return catalogRepository.findAllByWorkspaceIdOrderByNameAsc(workspaceId).stream()
+                .map(catalogMapper::toResponse)
+                .toList();
     }
 
     // ----- Items -----
     @Override
-    public CatalogItem createItem(String catalogId, String value) {
+    public CatalogItemResponse createItem(String catalogId, CatalogItemCreateRequest request) {
         Catalog catalog = catalogRepository.findById(catalogId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Catalog not found"));
 
-        if (itemRepository.existsByCatalogIdAndValue(catalogId, value)) {
+        if (itemRepository.existsByCatalogIdAndValue(catalogId, request.getValue())) {
             throw new ResponseStatusException(CONFLICT, "Item value already exists in this catalog");
         }
 
-        CatalogItem item = CatalogItem.builder()
-                .catalog(catalog)
-                .value(value)
-                .build();
+        CatalogItem item = itemMapper.toCatalogItem(request);
+        item.setCatalog(catalog);
 
-        return itemRepository.save(item);
+        CatalogItem createdItem = itemRepository.save(item);
+        return itemMapper.toResponse(createdItem);
     }
 
     @Override
-    public CatalogItem updateItem(String catalogId, String itemId, String value) {
+    public CatalogItemResponse updateItem(String catalogId, String itemId, CatalogItemUpdateRequest request) {
         CatalogItem item = itemRepository.findByIdAndCatalog_Id(itemId, catalogId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Item not found in catalog"));
 
-        // si cambia el code, validamos unique
-        if (!item.getValue().equals(value) && itemRepository.existsByCatalogIdAndValue(catalogId, value)) {
+        if (!item.getValue().equals(request.getValue()) && itemRepository.existsByCatalogIdAndValue(catalogId, request.getValue())) {
             throw new ResponseStatusException(CONFLICT, "Another item with this value already exists");
         }
-
-        item.setValue(value);
-
-        return itemRepository.save(item);
+        
+        itemMapper.updateCatalogItem(request, item);
+        CatalogItem updatedItem = itemRepository.save(item);
+        return itemMapper.toResponse(updatedItem);
     }
 
     @Override
@@ -144,14 +143,17 @@ public class CatalogServiceImpl implements CatalogService {
 
     @Override
     @Transactional(readOnly = true)
-    public CatalogItem getItem(String catalogId, String itemId) {
-        return itemRepository.findByIdAndCatalog_Id(itemId, catalogId)
+    public CatalogItemResponse getItem(String catalogId, String itemId) {
+        CatalogItem item = itemRepository.findByIdAndCatalog_Id(itemId, catalogId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Item not found in catalog"));
+        return itemMapper.toResponse(item);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<CatalogItem> listItems(String catalogId) {
-        return itemRepository.findAllByCatalog_IdOrderByValue(catalogId);
+    public List<CatalogItemResponse> listItems(String catalogId) {
+        return itemRepository.findAllByCatalog_IdOrderByValue(catalogId).stream()
+                .map(itemMapper::toResponse)
+                .toList();
     }
 }

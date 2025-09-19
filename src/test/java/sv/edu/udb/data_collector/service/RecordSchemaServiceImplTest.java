@@ -4,15 +4,24 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+import sv.edu.udb.data_collector.controller.request.RecordSchemaRequestCreate;
+import sv.edu.udb.data_collector.controller.request.RecordSchemaRequestUpdate;
+import sv.edu.udb.data_collector.controller.response.RecordSchemaResponse;
 import sv.edu.udb.data_collector.domain.RecordSchema;
 import sv.edu.udb.data_collector.domain.Workspace;
 import sv.edu.udb.data_collector.repository.RecordSchemaRepository;
 import sv.edu.udb.data_collector.repository.WorkspaceRepository;
 import sv.edu.udb.data_collector.service.implementation.RecordSchemaServiceImpl;
-import jakarta.persistence.EntityNotFoundException;
+import sv.edu.udb.data_collector.service.mapper.RecordSchemaMapper;
+import sv.edu.udb.data_collector.service.mapper.RecordSchemaMapperImpl;
+
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,145 +30,169 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class) // Habilita las anotaciones de Mockito
+@ExtendWith(MockitoExtension.class)
 class RecordSchemaServiceImplTest {
 
-    @Mock // Mockito creará una implementación falsa de este repositorio
+    @Mock
     private RecordSchemaRepository recordSchemeRepository;
 
-    @Mock // Y de este también
+    @Mock
     private WorkspaceRepository workspaceRepository;
+    
+    // Usamos @Spy para los mappers porque queremos usar sus métodos reales de mapeo
+    @Spy
+    private RecordSchemaMapper recordSchemaMapper = Mappers.getMapper(RecordSchemaMapper.class);
 
-    @InjectMocks // Mockito inyectará los mocks de arriba en esta instancia del servicio
+    @InjectMocks
     private RecordSchemaServiceImpl recordSchemeService;
 
     private Workspace workspace;
-    private RecordSchema recordScheme;
+    private RecordSchema recordSchema;
+    private RecordSchemaResponse recordSchemaResponse;
 
     @BeforeEach
     void setUp() {
-        // Pre-configuramos objetos de dominio que usaremos en varias pruebas
         workspace = Workspace.builder().id("ws-123").name("Mi Workspace").build();
-        recordScheme = RecordSchema.builder()
+        recordSchema = RecordSchema.builder()
                 .id("rs-456")
                 .name("Esquema de Clientes")
                 .description("Datos de clientes")
                 .workspace(workspace)
                 .build();
+        recordSchemaResponse = RecordSchemaResponse.builder()
+                .id("rs-456")
+                .name("Esquema de Clientes")
+                .description("Datos de clientes")
+                .workspaceId("ws-123")
+                .build();
     }
 
     // --- Pruebas para el método create() ---
-
     @Test
-    @DisplayName("Debe crear un RecordScheme exitosamente")
-    void create_whenDataIsValid_shouldReturnSavedScheme() {
-        // Arrange (Organizar)
-        // Simulamos que el workspace existe
+    @DisplayName("Debe crear un RecordSchema exitosamente y devolver un DTO de respuesta")
+    void create_whenDataIsValid_shouldReturnSavedResponseDTO() {
+        // Arrange
+        RecordSchemaRequestCreate createRequest = new RecordSchemaRequestCreate();
+        createRequest.setWorkspaceId("ws-123");
+        createRequest.setName("Nuevo Esquema");
+        createRequest.setDescription("Descripción");
+
         when(workspaceRepository.findById("ws-123")).thenReturn(Optional.of(workspace));
-        // Simulamos que no existe un esquema con el mismo nombre
         when(recordSchemeRepository.findByWorkspaceIdAndName("ws-123", "Nuevo Esquema")).thenReturn(Optional.empty());
-        // Simulamos lo que devolverá el método save
         when(recordSchemeRepository.save(any(RecordSchema.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Act (Actuar)
-        RecordSchema createdScheme = recordSchemeService.create("ws-123", "Nuevo Esquema", "Descripción");
+        // Act
+        RecordSchemaResponse result = recordSchemeService.create(createRequest);
 
-        // Assert (Afirmar)
-        assertThat(createdScheme).isNotNull();
-        assertThat(createdScheme.getName()).isEqualTo("Nuevo Esquema");
-        assertThat(createdScheme.getWorkspace().getId()).isEqualTo("ws-123");
-        verify(recordSchemeRepository, times(1)).save(any(RecordSchema.class)); // Verificamos que se llamó a save()
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result.getName()).isEqualTo("Nuevo Esquema");
+        assertThat(result.getWorkspaceId()).isEqualTo("ws-123");
+        verify(recordSchemeRepository, times(1)).save(any(RecordSchema.class));
     }
 
     @Test
-    @DisplayName("Debe lanzar EntityNotFoundException si el Workspace no existe al crear")
-    void create_whenWorkspaceNotFound_shouldThrowEntityNotFoundException() {
+    @DisplayName("Debe lanzar ResponseStatusException (404) si el Workspace no existe al crear")
+    void create_whenWorkspaceNotFound_shouldThrowResponseStatusException() {
         // Arrange
+        RecordSchemaRequestCreate createRequest = new RecordSchemaRequestCreate();
+        createRequest.setWorkspaceId("ws-inexistente");
         when(workspaceRepository.findById("ws-inexistente")).thenReturn(Optional.empty());
 
         // Act & Assert
-        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> {
-            recordSchemeService.create("ws-inexistente", "Nombre", "Desc");
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
+            recordSchemeService.create(createRequest);
         });
 
-        assertThat(exception.getMessage()).isEqualTo("Workspace no encontrado con el id: ws-inexistente");
-        verify(recordSchemeRepository, never()).save(any()); // Verificamos que NUNCA se intentó guardar
+        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(exception.getReason()).contains("Workspace no encontrado");
+        verify(recordSchemeRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("Debe lanzar IllegalStateException si el nombre del esquema ya existe en el workspace")
-    void create_whenNameAlreadyExists_shouldThrowIllegalStateException() {
+    @DisplayName("Debe lanzar ResponseStatusException (409) si el nombre del esquema ya existe")
+    void create_whenNameAlreadyExists_shouldThrowResponseStatusException() {
         // Arrange
+        RecordSchemaRequestCreate createRequest = new RecordSchemaRequestCreate();
+        createRequest.setWorkspaceId("ws-123");
+        createRequest.setName("Nombre Repetido");
+        
         when(workspaceRepository.findById("ws-123")).thenReturn(Optional.of(workspace));
-        when(recordSchemeRepository.findByWorkspaceIdAndName("ws-123", "Nombre Repetido")).thenReturn(Optional.of(recordScheme));
+        when(recordSchemeRepository.findByWorkspaceIdAndName("ws-123", "Nombre Repetido")).thenReturn(Optional.of(recordSchema));
 
         // Act & Assert
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            recordSchemeService.create("ws-123", "Nombre Repetido", "Desc");
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
+            recordSchemeService.create(createRequest);
         });
         
-        assertThat(exception.getMessage()).isEqualTo("Ya existe un esquema con el nombre 'Nombre Repetido' en este workspace.");
+        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(exception.getReason()).contains("Ya existe un esquema con el nombre 'Nombre Repetido'");
     }
     
     // --- Pruebas para el método update() ---
-
     @Test
-    @DisplayName("Debe actualizar un RecordScheme exitosamente")
-    void update_whenDataIsValid_shouldReturnUpdatedScheme() {
+    @DisplayName("Debe actualizar un RecordSchema exitosamente y devolver un DTO de respuesta")
+    void update_whenDataIsValid_shouldReturnUpdatedResponseDTO() {
         // Arrange
-        when(recordSchemeRepository.findById("rs-456")).thenReturn(Optional.of(recordScheme));
-        when(recordSchemeRepository.save(any(RecordSchema.class))).thenReturn(recordScheme);
-
-        RecordSchema updatedData = RecordSchema.builder().name("Nuevo Nombre").description("Nueva Desc.").build();
+        RecordSchemaRequestUpdate updateRequest = new RecordSchemaRequestUpdate();
+        updateRequest.setName("Nuevo Nombre");
+        updateRequest.setDescription("Nueva Desc.");
+        
+        when(recordSchemeRepository.findById("rs-456")).thenReturn(Optional.of(recordSchema));
+        when(recordSchemeRepository.save(any(RecordSchema.class))).thenReturn(recordSchema);
 
         // Act
-        RecordSchema result = recordSchemeService.update("rs-456", updatedData);
+        RecordSchemaResponse result = recordSchemeService.update("rs-456", updateRequest);
 
         // Assert
+        assertThat(result).isNotNull();
         assertThat(result.getName()).isEqualTo("Nuevo Nombre");
         assertThat(result.getDescription()).isEqualTo("Nueva Desc.");
-        verify(recordSchemeRepository).save(recordScheme);
+        verify(recordSchemeRepository).save(recordSchema);
     }
     
     @Test
-    @DisplayName("Debe lanzar EntityNotFoundException si el RecordScheme no existe al actualizar")
-    void update_whenSchemeNotFound_shouldThrowEntityNotFoundException() {
+    @DisplayName("Debe lanzar ResponseStatusException (404) si el RecordSchema no existe al actualizar")
+    void update_whenSchemeNotFound_shouldThrowResponseStatusException() {
         // Arrange
         when(recordSchemeRepository.findById(anyString())).thenReturn(Optional.empty());
-        RecordSchema updatedData = RecordSchema.builder().name("data").build();
+        RecordSchemaRequestUpdate updateRequest = new RecordSchemaRequestUpdate();
 
         // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> {
-            recordSchemeService.update("id-inexistente", updatedData);
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
+            recordSchemeService.update("id-inexistente", updateRequest);
         });
+        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(exception.getReason()).contains("RecordSchema no encontrado");
     }
-
+    
     // --- Pruebas para el método delete() ---
-
     @Test
-    @DisplayName("Debe eliminar un RecordScheme cuando existe")
-    void delete_whenSchemeExists_shouldCallDeleteById() {
+    @DisplayName("Debe eliminar un RecordSchema cuando existe")
+    void delete_whenSchemeExists_shouldCallDelete() {
         // Arrange
-        when(recordSchemeRepository.existsById("rs-456")).thenReturn(true);
-        doNothing().when(recordSchemeRepository).deleteById("rs-456"); // No hace nada cuando se llama a deleteById
+        when(recordSchemeRepository.findById("rs-456")).thenReturn(Optional.of(recordSchema));
+        doNothing().when(recordSchemeRepository).delete(recordSchema);
 
         // Act
         recordSchemeService.delete("rs-456");
 
         // Assert
-        verify(recordSchemeRepository, times(1)).deleteById("rs-456");
+        verify(recordSchemeRepository, times(1)).delete(recordSchema);
     }
-
+    
     @Test
-    @DisplayName("Debe lanzar EntityNotFoundException al intentar eliminar un RecordScheme que no existe")
-    void delete_whenSchemeDoesNotExist_shouldThrowEntityNotFoundException() {
+    @DisplayName("Debe lanzar ResponseStatusException (404) al intentar eliminar un RecordSchema que no existe")
+    void delete_whenSchemeDoesNotExist_shouldThrowResponseStatusException() {
         // Arrange
-        when(recordSchemeRepository.existsById("id-inexistente")).thenReturn(false);
+        when(recordSchemeRepository.findById("id-inexistente")).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(EntityNotFoundException.class, () -> {
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> {
             recordSchemeService.delete("id-inexistente");
         });
-        verify(recordSchemeRepository, never()).deleteById(anyString()); // Verificamos que NUNCA se llamó a delete
+        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(exception.getReason()).contains("No se puede eliminar. RecordSchema no encontrado");
+        verify(recordSchemeRepository, never()).delete(any());
     }
 }
