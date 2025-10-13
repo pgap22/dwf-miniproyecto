@@ -20,7 +20,7 @@ import java.util.UUID;
 public class Catalog {
 
     @Id
-    @UuidGenerator // Genera UUIDs automáticamente (si prefieres String “cuid”, mira la nota abajo)
+    @UuidGenerator
     @Column(nullable = false, updatable = false, length = 36)
     private String id;
 
