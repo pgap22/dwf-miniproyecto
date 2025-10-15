@@ -2,6 +2,7 @@ package sv.edu.udb.data_collector.controller.request;
 
 import lombok.*;
 import jakarta.validation.constraints.NotBlank;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
@@ -13,10 +14,12 @@ public class CreateRecordValueRequest {
     @NotBlank
     private String attributeId;
 
+    // Solo uno de estos debe venir según el tipo del atributo
     private String stringValue;
     private BigDecimal numberValue;
     private Boolean booleanValue;
     private OffsetDateTime dateValue;
 
-    private String catalogItemId;   // antes: Long
+    // Para atributos de catálogo (IDs String en tu proyecto)
+    private String catalogItemId;
 }
