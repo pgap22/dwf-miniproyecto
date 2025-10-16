@@ -16,23 +16,16 @@ import jakarta.persistence.criteria.JoinType;
 import sv.edu.udb.data_collector.controller.request.CreateRecordRequest;
 import sv.edu.udb.data_collector.controller.request.CreateRecordValueRequest;
 import sv.edu.udb.data_collector.controller.request.PatchRecordRequest;
-import sv.edu.udb.data_collector.domain.CatalogItem;
-import sv.edu.udb.data_collector.domain.RecordEntity;
-import sv.edu.udb.data_collector.domain.RecordSchema;
-import sv.edu.udb.data_collector.domain.RecordSchemaAttribute;
-import sv.edu.udb.data_collector.domain.RecordValue;
-import sv.edu.udb.data_collector.domain.User;
-import sv.edu.udb.data_collector.repository.CatalogItemRepository;
-import sv.edu.udb.data_collector.repository.RecordRepository;
-import sv.edu.udb.data_collector.repository.RecordSchemaAttributeRepository;
-import sv.edu.udb.data_collector.repository.RecordSchemaRepository;
-import sv.edu.udb.data_collector.repository.UserRepository;
+import sv.edu.udb.data_collector.domain.*;
+import sv.edu.udb.data_collector.repository.*;
 import sv.edu.udb.data_collector.service.RecordService;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.Set;
+
+import static sv.edu.udb.data_collector.configuration.web.SecurityUtils.*;
 
 @Service
 @RequiredArgsConstructor
@@ -42,7 +35,6 @@ public class RecordServiceImpl implements RecordService {
     private final RecordSchemaRepository recordSchemaRepository;
     private final RecordSchemaAttributeRepository recordSchemaAttributeRepository;
     private final CatalogItemRepository catalogItemRepository;
-    private final UserRepository userRepository;
 
     // ------------------- CREATE -------------------
     @Override
@@ -51,20 +43,15 @@ public class RecordServiceImpl implements RecordService {
         RecordSchema schema = recordSchemaRepository.findById(schemaId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Record schema not found"));
 
-        User createdBy = (currentUsername == null || currentUsername.isBlank())
-                ? null
-                : userRepository.findByEmail(currentUsername).orElse(null);
-
         RecordEntity record = RecordEntity.builder()
                 .schema(schema)
-                .createdBy(createdBy)
-                .build();
+                .build(); // createdBy lo setea JPA Auditing
 
         record = recordRepository.save(record);
 
         if (request.getValues() != null) {
             for (CreateRecordValueRequest it : request.getValues()) {
-                applyAndValidate(schemaId, record, it); // reutiliza validación del POST
+                applyAndValidate(schemaId, record, it);
             }
         }
         return recordRepository.save(record);
@@ -89,7 +76,7 @@ public class RecordServiceImpl implements RecordService {
     ) {
         Specification<RecordEntity> spec = Specification.allOf(
                 specBySchema(schemaId),
-                specCreatedBy(createdByEmail),
+                specOwnedByCurrent(), // ⬅ scope por dueño
                 specCreatedFrom(createdFrom),
                 specCreatedTo(createdTo),
                 specStringAttrLike(stringAttrId, stringContains),
@@ -109,7 +96,15 @@ public class RecordServiceImpl implements RecordService {
         if (!rec.getSchema().getId().equals(schemaId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Record not found in schema");
         }
-        // inicializa LAZY sin warnings
+
+        // ownership check (404 si no es tuyo)
+        if (!isAdmin()) {
+            String email = currentEmailOrNull();
+            if (email == null || rec.getCreatedBy() == null || !email.equals(rec.getCreatedBy().getEmail())) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Record not found");
+            }
+        }
+
         Hibernate.initialize(rec.getValues());
         return rec;
     }
@@ -118,21 +113,17 @@ public class RecordServiceImpl implements RecordService {
     @Override
     @Transactional
     public RecordEntity patch(String schemaId, Long recordId, PatchRecordRequest request, String currentUsername) {
-        RecordEntity record = getOne(schemaId, recordId);
+        RecordEntity record = getOne(schemaId, recordId); // getOne ya valida ownership
 
-        // 1) eliminar atributos si se solicitó
         if (request.getRemoveAttributeIds() != null && !request.getRemoveAttributeIds().isEmpty()) {
             Set<String> remove = new HashSet<>(request.getRemoveAttributeIds());
-            record.getValues().removeIf(v -> remove.contains(v.getAttribute().getId())); // orphanRemoval=true en flush
+            record.getValues().removeIf(v -> remove.contains(v.getAttribute().getId()));
         }
-
-        // 2) upsert de los valores enviados (con re-validación)
         if (request.getValues() != null) {
             for (CreateRecordValueRequest it : request.getValues()) {
-                applyAndValidate(schemaId, record, it); // misma lógica que POST
+                applyAndValidate(schemaId, record, it);
             }
         }
-
         return recordRepository.save(record);
     }
 
@@ -140,16 +131,11 @@ public class RecordServiceImpl implements RecordService {
     @Override
     @Transactional
     public void delete(String schemaId, Long recordId) {
-        RecordEntity record = getOne(schemaId, recordId);
+        RecordEntity record = getOne(schemaId, recordId); // getOne ya valida ownership
         recordRepository.delete(record);
     }
 
     // ===================== VALIDACIÓN + UPSERT =====================
-    /**
-     * - Verifica que el atributo exista y pertenezca al schema
-     * - Valida que solo venga un valor por atributo (extiende aquí con DataType/ValidationRule)
-     * - UPSERT: crea/actualiza el RecordValue del atributo
-     */
     private void applyAndValidate(String schemaId, RecordEntity record, CreateRecordValueRequest it) {
         RecordSchemaAttribute attribute = recordSchemaAttributeRepository.findById(it.getAttributeId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Attribute not found: " + it.getAttributeId()));
@@ -164,30 +150,21 @@ public class RecordServiceImpl implements RecordService {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Catalog item not found: " + it.getCatalogItemId()));
         }
 
-        // Validación básica: solo un valor por atributo
         int nonNulls = 0;
         if (it.getStringValue() != null) nonNulls++;
         if (it.getNumberValue() != null) nonNulls++;
         if (it.getBooleanValue() != null) nonNulls++;
         if (it.getDateValue() != null) nonNulls++;
         if (it.getCatalogItemId() != null && !it.getCatalogItemId().isBlank()) nonNulls++;
-        if (nonNulls > 1) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only one value per attribute is allowed");
-        }
+        if (nonNulls > 1) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only one value per attribute is allowed");
 
-        // TODO: si tu RecordSchemaAttribute expone DataType/ValidationRule, valida aquí tipos, required, rangos, regex, etc.
-
-        // UPSERT
         RecordValue value = record.getValues() == null ? null :
                 record.getValues().stream()
                         .filter(v -> v.getAttribute().getId().equals(attribute.getId()))
                         .findFirst().orElse(null);
 
         if (value == null) {
-            value = RecordValue.builder()
-                    .record(record)
-                    .attribute(attribute)
-                    .build();
+            value = RecordValue.builder().record(record).attribute(attribute).build();
             record.getValues().add(value);
         }
 
@@ -198,27 +175,24 @@ public class RecordServiceImpl implements RecordService {
         value.setCatalogItem(catalogItem);
     }
 
-    // ===================== SPECIFICATIONS LOCALES =====================
+    // ===================== SPECIFICATIONS =====================
     private Specification<RecordEntity> specBySchema(String schemaId) {
         return (root, q, cb) -> cb.equal(root.get("schema").get("id"), schemaId);
     }
 
-    private Specification<RecordEntity> specCreatedBy(String email) {
-        return (root, q, cb) -> (email == null || email.isBlank())
-                ? cb.conjunction()
+    private Specification<RecordEntity> specOwnedByCurrent() {
+        if (isAdmin()) return (root, q, cb) -> cb.conjunction();
+        String email = currentEmailOrNull();
+        return (root, q, cb) -> email == null ? cb.disjunction()
                 : cb.equal(root.get("createdBy").get("email"), email);
     }
 
     private Specification<RecordEntity> specCreatedFrom(OffsetDateTime from) {
-        return (root, q, cb) -> from == null
-                ? cb.conjunction()
-                : cb.greaterThanOrEqualTo(root.get("createdAt"), from);
+        return (root, q, cb) -> from == null ? cb.conjunction() : cb.greaterThanOrEqualTo(root.get("createdAt"), from);
     }
 
     private Specification<RecordEntity> specCreatedTo(OffsetDateTime to) {
-        return (root, q, cb) -> to == null
-                ? cb.conjunction()
-                : cb.lessThanOrEqualTo(root.get("createdAt"), to);
+        return (root, q, cb) -> to == null ? cb.conjunction() : cb.lessThanOrEqualTo(root.get("createdAt"), to);
     }
 
     private Specification<RecordEntity> specStringAttrLike(String attrId, String contains) {
@@ -239,14 +213,11 @@ public class RecordServiceImpl implements RecordService {
             Join<RecordEntity, RecordValue> j = root.join("values", JoinType.LEFT);
             if (q != null) q.distinct(true);
             if (min != null && max != null) {
-                return cb.and(cb.equal(j.get("attribute").get("id"), attrId),
-                        cb.between(j.get("numberValue"), min, max));
+                return cb.and(cb.equal(j.get("attribute").get("id"), attrId), cb.between(j.get("numberValue"), min, max));
             } else if (min != null) {
-                return cb.and(cb.equal(j.get("attribute").get("id"), attrId),
-                        cb.greaterThanOrEqualTo(j.get("numberValue"), min));
+                return cb.and(cb.equal(j.get("attribute").get("id"), attrId), cb.greaterThanOrEqualTo(j.get("numberValue"), min));
             } else {
-                return cb.and(cb.equal(j.get("attribute").get("id"), attrId),
-                        cb.lessThanOrEqualTo(j.get("numberValue"), max));
+                return cb.and(cb.equal(j.get("attribute").get("id"), attrId), cb.lessThanOrEqualTo(j.get("numberValue"), max));
             }
         };
     }

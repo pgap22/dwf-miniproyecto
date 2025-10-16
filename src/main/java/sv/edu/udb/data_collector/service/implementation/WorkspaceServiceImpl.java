@@ -15,6 +15,8 @@ import sv.edu.udb.data_collector.service.mapper.WorkspaceMapper;
 
 import java.util.List;
 
+import static sv.edu.udb.data_collector.configuration.web.SecurityUtils.*;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -30,7 +32,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         }
         Workspace ws = Workspace.builder()
                 .name(request.getName())
-                .build();
+                .build(); // createdBy lo setea JPA Auditing
         ws = repository.save(ws);
         return mapper.toResponse(ws);
     }
@@ -40,19 +42,38 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     public WorkspaceResponse get(String id) {
         Workspace ws = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace not found"));
+
+        if (!isAdmin()) {
+            String email = currentEmailOrNull();
+            if (email == null || ws.getCreatedBy() == null || !email.equals(ws.getCreatedBy().getEmail())) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace not found");
+            }
+        }
         return mapper.toResponse(ws);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<WorkspaceResponse> list() {
-        return repository.findAll().stream().map(mapper::toResponse).toList();
+        if (isAdmin()) {
+            return repository.findAll().stream().map(mapper::toResponse).toList();
+        }
+        String email = currentEmailOrNull();
+        if (email == null) return List.of();
+        return repository.findAllByCreatedBy_Email(email).stream().map(mapper::toResponse).toList();
     }
 
     @Override
     public WorkspaceResponse patch(String id, WorkspaceUpdateRequest request) {
         Workspace ws = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace not found"));
+
+        if (!isAdmin()) {
+            String email = currentEmailOrNull();
+            if (email == null || ws.getCreatedBy() == null || !email.equals(ws.getCreatedBy().getEmail())) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace not found");
+            }
+        }
 
         if (request.getName() != null && !request.getName().isBlank()) {
             if (!request.getName().equalsIgnoreCase(ws.getName())
@@ -61,15 +82,20 @@ public class WorkspaceServiceImpl implements WorkspaceService {
             }
             ws.setName(request.getName());
         }
-        // updatedAt se actualiza con @PreUpdate
         return mapper.toResponse(ws);
     }
 
     @Override
     public void delete(String id) {
-        if (!repository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace not found");
+        Workspace ws = repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace not found"));
+
+        if (!isAdmin()) {
+            String email = currentEmailOrNull();
+            if (email == null || ws.getCreatedBy() == null || !email.equals(ws.getCreatedBy().getEmail())) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace not found");
+            }
         }
-        repository.deleteById(id);
+        repository.delete(ws);
     }
 }
