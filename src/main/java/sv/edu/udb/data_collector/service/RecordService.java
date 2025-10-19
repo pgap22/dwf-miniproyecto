@@ -1,40 +1,22 @@
 package sv.edu.udb.data_collector.service;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import sv.edu.udb.data_collector.controller.request.CreateRecordRequest;
-import sv.edu.udb.data_collector.controller.request.PatchRecordRequest;
-import sv.edu.udb.data_collector.domain.RecordEntity;
+import sv.edu.udb.data_collector.controller.response.RecordResponse;
 
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
 
 public interface RecordService {
 
-    RecordEntity create(String schemaId, CreateRecordRequest request, String currentUsername);
+    RecordResponse create(CreateRecordRequest request);
 
-    // --- GET lista (con filtros y paginación) ---
-    Page<RecordEntity> list(
-            String schemaId,
-            String createdByEmail,
-            OffsetDateTime createdFrom,
-            OffsetDateTime createdTo,
-            String stringAttrId,
-            String stringContains,
-            String numberAttrId,
-            BigDecimal numberMin,
-            BigDecimal numberMax,
-            String boolAttrId,
-            Boolean boolValue,
-            Pageable pageable
-    );
+    // // --- GET lista (con filtros y paginación) ---
+    // List<RecordResponse> list(String schemaId);
 
-    // --- GET detalle ---
-    RecordEntity getOne(String schemaId, Long recordId);
+    // // --- GET detalle ---
+    // RecordResponse getOne(String schemaId, Long recordId);
 
-    // --- PATCH parcial con re-validación ---
-    RecordEntity patch(String schemaId, Long recordId, PatchRecordRequest request, String currentUsername);
+    // // --- PATCH parcial con re-validación ---
+    // RecordResponse patch(String schemaId, Long recordId, PatchRecordRequest request, String currentUsername);
 
-    // --- DELETE ---
-    void delete(String schemaId, Long recordId);
+    // // --- DELETE ---
+    // void delete(String schemaId, Long recordId);
 }

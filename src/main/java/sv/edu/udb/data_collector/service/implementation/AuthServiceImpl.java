@@ -20,7 +20,6 @@ public class AuthServiceImpl implements AuthService {
     private final UserMapper userMapper;
     private final TokenService tokenService;
 
-    @Override
     public LoginResponse login(LoginRequest request) {
         var user = repo.findByEmail(request.getEmail())
                 .orElseThrow(() -> new EntityNotFoundException("Credenciales inválidas"));

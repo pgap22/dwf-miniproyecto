@@ -2,18 +2,26 @@ package sv.edu.udb.data_collector.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import org.hibernate.annotations.UuidGenerator;
 
 /**
- * Representa el esquema o la estructura de un tipo de registro dentro de un espacio de trabajo.
- * Cada esquema define un nombre y una descripción únicos dentro de su workspace.
+ * Representa el esquema o la estructura de un tipo de registro dentro de un
+ * espacio de trabajo.
+ * Cada esquema define un nombre y una descripción únicos dentro de su
+ * workspace.
  */
 @Entity
 @Table(name = "record_schemas", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"workspaceId", "name"})
+        @UniqueConstraint(columnNames = { "workspaceId", "name" })
 })
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class RecordSchema {
 
@@ -45,10 +53,10 @@ public class RecordSchema {
      * Esta es la representación de la clave foránea `workspaceId`.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-        name = "workspaceId",
-        nullable = false,
-        foreignKey = @ForeignKey(name = "record_schemas_workspaceId_fkey")
-    )
+    @JoinColumn(name = "workspaceId", nullable = false, foreignKey = @ForeignKey(name = "record_schemas_workspaceId_fkey"))
     private Workspace workspace;
+
+    @OneToMany(mappedBy = "recordSchema", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<RecordSchemaAttribute> attribues = new ArrayList<>();
 }

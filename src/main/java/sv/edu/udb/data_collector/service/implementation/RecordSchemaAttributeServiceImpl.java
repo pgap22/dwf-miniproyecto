@@ -25,7 +25,6 @@ public class RecordSchemaAttributeServiceImpl implements RecordSchemaAttributeSe
     private final CatalogRepository catalogRepository;
     private final RecordSchemaAttributeMapper attributeMapper;
 
-    @Override
     @Transactional
     public RecordSchemaAttributeResponse add(String recordSchemaId, RecordSchemaAttributeCreateRequest request) {
         RecordSchema schema = schemaRepository.findById(recordSchemaId)
@@ -54,14 +53,12 @@ public class RecordSchemaAttributeServiceImpl implements RecordSchemaAttributeSe
         return attributeMapper.toResponse(savedAttribute);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public List<RecordSchemaAttributeResponse> findBySchemaId(String recordSchemaId) {
         List<RecordSchemaAttribute> attributes = attributeRepository.findByRecordSchemaId(recordSchemaId);
         return attributeMapper.toResponseList(attributes);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public RecordSchemaAttributeResponse findById(String attributeId) {
         RecordSchemaAttribute attribute = attributeRepository.findById(attributeId)
@@ -69,7 +66,6 @@ public class RecordSchemaAttributeServiceImpl implements RecordSchemaAttributeSe
         return attributeMapper.toResponse(attribute);
     }
 
-    @Override
     @Transactional
     public RecordSchemaAttributeResponse update(String attributeId, RecordSchemaAttributeUpdateRequest request) {
         RecordSchemaAttribute existingAttribute = attributeRepository.findById(attributeId)
@@ -103,7 +99,6 @@ public class RecordSchemaAttributeServiceImpl implements RecordSchemaAttributeSe
         return attributeMapper.toResponse(savedAttribute);
     }
 
-    @Override
     @Transactional
     public void remove(String attributeId) {
         attributeRepository.deleteById(attributeId);

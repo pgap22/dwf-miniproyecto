@@ -5,8 +5,7 @@ import lombok.*;
 import sv.edu.udb.data_collector.controller.validation.ValueOfEnum;
 import sv.edu.udb.data_collector.domain.MemberRole;
 
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

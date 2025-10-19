@@ -75,8 +75,14 @@ class AuthControllerTest {
 
         when(authService.login(any(LoginRequest.class))).thenReturn(expectedResponse);
 
+
+        var dtoLogin = new LoginRequest();
+
+        dtoLogin.setEmail(EMAIL);
+        dtoLogin.setPassword(PASSWORD);
+
         var payload = MAPPER.writeValueAsString(
-                new LoginRequest(EMAIL, PASSWORD)
+              dtoLogin
         );
 
         // ---------- Act ----------

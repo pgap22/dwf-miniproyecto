@@ -21,7 +21,7 @@ public interface WorkspaceUserRepository extends JpaRepository<WorkspaceUser, St
     Optional<WorkspaceUser> findByWorkspaceIdAndUserId(String workspaceId, String userId);
 
     // elimina y devuelve cuántas filas se borraron
-    long deleteByWorkspaceIdAndUserId(String workspaceId, String userId);
+    Long deleteByWorkspaceIdAndUserId(String workspaceId, String userId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
