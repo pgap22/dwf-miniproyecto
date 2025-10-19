@@ -1,10 +1,16 @@
 package sv.edu.udb.data_collector.controller.request;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-@Data 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class RecordSchemaRequestCreate {
     @NotBlank
     private String workspaceId;

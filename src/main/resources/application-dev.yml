@@ -7,7 +7,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
-    show-sql: true
+    show-sql: false
 
   flyway:
     # normalmente no necesitas estas, solo si alguna vez conectas a una DB ya existente sin metadata

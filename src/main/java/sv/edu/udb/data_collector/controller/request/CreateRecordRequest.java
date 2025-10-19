@@ -1,13 +1,23 @@
 package sv.edu.udb.data_collector.controller.request;
 
-import lombok.*;
-import jakarta.validation.constraints.NotEmpty;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.JsonNode;
 
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
+
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CreateRecordRequest {
-    @NotEmpty
-    private List<CreateRecordValueRequest> values;
+    @NotBlank(message = "Debes añadir el schemaId")
+    private String schemaId;
+
+    @NotNull(message = "Debes añadir un json")
+    private JsonNode data;    
 }
+

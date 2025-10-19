@@ -16,7 +16,6 @@ import sv.edu.udb.data_collector.service.RecordSchemaService;
 import sv.edu.udb.data_collector.service.mapper.RecordSchemaMapper;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +25,6 @@ public class RecordSchemaServiceImpl implements RecordSchemaService {
     private final WorkspaceRepository workspaceRepository;
     private final RecordSchemaMapper recordSchemaMapper;
 
-    @Override
     @Transactional
     public RecordSchemaResponse create(RecordSchemaRequestCreate request) {
         // 1. Obtener el workspace
@@ -48,14 +46,12 @@ public class RecordSchemaServiceImpl implements RecordSchemaService {
         return recordSchemaMapper.toResponse(savedScheme);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public List<RecordSchemaResponse> findAllByWorkspaceId(String workspaceId) {
         List<RecordSchema> schemes = recordSchemeRepository.findByWorkspaceId(workspaceId);
         return recordSchemaMapper.toResponseList(schemes);
     }
 
-    @Override
     @Transactional(readOnly = true)
     public RecordSchemaResponse findById(String id) {
         RecordSchema scheme = recordSchemeRepository.findById(id)
@@ -63,7 +59,6 @@ public class RecordSchemaServiceImpl implements RecordSchemaService {
         return recordSchemaMapper.toResponse(scheme);
     }
 
-    @Override
     @Transactional
     public RecordSchemaResponse update(String id, RecordSchemaRequestUpdate request) {
         // 1. Encontrar la entidad existente
@@ -86,15 +81,8 @@ public class RecordSchemaServiceImpl implements RecordSchemaService {
         return recordSchemaMapper.toResponse(updatedScheme);
     }
 
-    @Override
     @Transactional
     public void delete(String id) {
-        // En lugar de findById y existsById, podemos usar deleteById directamente
-        // y manejar la excepción de base de datos o verificar primero
-        Optional<RecordSchema> scheme = recordSchemeRepository.findById(id);
-        if (scheme.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No se puede eliminar. RecordSchema no encontrado con el id: " + id);
-        }
-        recordSchemeRepository.delete(scheme.get());
+        recordSchemeRepository.deleteById(id);
     }
 }

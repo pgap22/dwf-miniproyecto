@@ -15,6 +15,8 @@ import sv.edu.udb.data_collector.domain.CatalogItem;
  * Utiliza MapStruct para generar el código de mapeo en tiempo de compilación.
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
+
+
 public interface CatalogItemMapper {
 
     @Mapping(target = "catalogId", source = "catalog.id")

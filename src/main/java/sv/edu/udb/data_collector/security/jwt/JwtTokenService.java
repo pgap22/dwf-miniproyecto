@@ -26,7 +26,6 @@ public class JwtTokenService implements TokenService {
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
     }
 
-    @Override
     public String generateAccessToken(String userId, String email) {
         Instant now = Instant.now();
         Instant exp = now.plus(Duration.ofMinutes(expirationMinutes));
@@ -39,15 +38,18 @@ public class JwtTokenService implements TokenService {
                 .compact();
     }
 
-    @Override
     public TokenPayload parse(String token) {
         var jws = Jwts.parserBuilder().setSigningKey(key()).build().parseClaimsJws(token);
         var c = jws.getBody();
         return new TokenPayload(c.getSubject(), c.get("email", String.class), c.getExpiration().toInstant());
     }
 
-    @Override
     public boolean isValid(String token) {
-        try { parse(token); return true; } catch (JwtException | IllegalArgumentException e) { return false; }
+        try {
+            parse(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
     }
 }

@@ -22,21 +22,18 @@ public class DataTypeServiceImpl implements DataTypeService {
     private final DataTypeRepository repository;
     private final DataTypeMapper dataTypeMapper;
 
-    @Override
     public List<DataTypeResponse> listPrimitives() {
         return repository.findAllByNameNotOrderByNameAsc("CATALOG").stream()
                 .map(dataTypeMapper::toResponse)
                 .toList();
     }
 
-    @Override
     public List<DataTypeResponse> listAll() {
         return repository.findAllByOrderByNameAsc().stream()
                 .map(dataTypeMapper::toResponse)
                 .toList();
     }
 
-    @Override
     public DataTypeResponse getById(String id) {
         DataType dataType = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "DataType not found with id: " + id));

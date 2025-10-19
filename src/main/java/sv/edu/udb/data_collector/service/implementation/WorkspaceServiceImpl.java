@@ -15,8 +15,6 @@ import sv.edu.udb.data_collector.service.mapper.WorkspaceMapper;
 
 import java.util.List;
 
-import static sv.edu.udb.data_collector.configuration.web.SecurityUtils.*;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -43,24 +41,15 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         Workspace ws = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace not found"));
 
-        if (!isAdmin()) {
-            String email = currentEmailOrNull();
-            if (email == null || ws.getCreatedBy() == null || !email.equals(ws.getCreatedBy().getEmail())) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace not found");
-            }
-        }
+
+        
         return mapper.toResponse(ws);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<WorkspaceResponse> list() {
-        if (isAdmin()) {
-            return repository.findAll().stream().map(mapper::toResponse).toList();
-        }
-        String email = currentEmailOrNull();
-        if (email == null) return List.of();
-        return repository.findAllByCreatedBy_Email(email).stream().map(mapper::toResponse).toList();
+        return repository.findAll().stream().map(mapper::toResponse).toList();
     }
 
     @Override
@@ -68,12 +57,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         Workspace ws = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace not found"));
 
-        if (!isAdmin()) {
-            String email = currentEmailOrNull();
-            if (email == null || ws.getCreatedBy() == null || !email.equals(ws.getCreatedBy().getEmail())) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace not found");
-            }
-        }
+
 
         if (request.getName() != null && !request.getName().isBlank()) {
             if (!request.getName().equalsIgnoreCase(ws.getName())
@@ -90,12 +74,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         Workspace ws = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace not found"));
 
-        if (!isAdmin()) {
-            String email = currentEmailOrNull();
-            if (email == null || ws.getCreatedBy() == null || !email.equals(ws.getCreatedBy().getEmail())) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Workspace not found");
-            }
-        }
+
         repository.delete(ws);
     }
 }

@@ -2,13 +2,12 @@ package sv.edu.udb.data_collector.repository;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 import sv.edu.udb.data_collector.domain.RecordSchemaAttribute;
 
 import java.util.List;
 import java.util.Optional;
 
-@Repository
+
 public interface RecordSchemaAttributeRepository extends JpaRepository<RecordSchemaAttribute, String> {
 
     @Override

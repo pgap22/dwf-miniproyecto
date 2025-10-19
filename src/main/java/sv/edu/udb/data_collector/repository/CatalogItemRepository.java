@@ -12,4 +12,5 @@ public interface CatalogItemRepository extends JpaRepository<CatalogItem, String
     Optional<CatalogItem> findByIdAndCatalog_Id(String id, String catalogId);
 
     boolean existsByCatalogIdAndValue(String catalogId, String value);
+
 }

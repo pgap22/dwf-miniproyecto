@@ -2,13 +2,16 @@ package sv.edu.udb.data_collector.controller.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.NoArgsConstructor;
+
 
 @Data
-@Getter
-@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class RecordSchemaAttributeCreateRequest {
 
     @NotBlank(message = "El nombre no puede estar vacío.")

@@ -37,7 +37,6 @@ public class CatalogServiceImpl implements CatalogService {
     private final CatalogItemMapper itemMapper;
 
     // ----- Catalog -----
-    @Override
     public CatalogResponse createCatalog(CatalogCreateRequest request) {
         Workspace ws = null;
         if (request.getWorkspaceId() != null && !request.getWorkspaceId().isBlank()) {
@@ -55,7 +54,7 @@ public class CatalogServiceImpl implements CatalogService {
         return catalogMapper.toResponse(createdCatalog);
     }
 
-    @Override
+    
     @Transactional
     public CatalogResponse updateCatalog(String catalogId, CatalogUpdateRequest request) {
         Catalog catalog = catalogRepository.findById(catalogId)
@@ -63,7 +62,7 @@ public class CatalogServiceImpl implements CatalogService {
 
         // Validación de unicidad si el nombre cambia
         if (request.getName() != null && !request.getName().isBlank() && !catalog.getName().equalsIgnoreCase(request.getName())) {
-            String wsId = (catalog.getWorkspace() != null) ? catalog.getWorkspace().getId() : null;
+            String wsId = catalog.getWorkspace().getId();
             if (catalogRepository.existsByNameAndWorkspaceId(request.getName(), wsId)) {
                 throw new ResponseStatusException(CONFLICT, "Catalog name already exists in this workspace");
             }
@@ -74,14 +73,14 @@ public class CatalogServiceImpl implements CatalogService {
         return catalogMapper.toResponse(updatedCatalog);
     }
 
-    @Override
+    
     public void deleteCatalog(String catalogId) {
         Catalog catalog = catalogRepository.findById(catalogId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Catalog not found"));
         catalogRepository.delete(catalog);
     }
 
-    @Override
+    
     @Transactional(readOnly = true)
     public CatalogResponse getCatalog(String catalogId) {
         Catalog catalog = catalogRepository.findById(catalogId)
@@ -89,22 +88,15 @@ public class CatalogServiceImpl implements CatalogService {
         return catalogMapper.toResponse(catalog);
     }
 
-    @Override
+    
     @Transactional(readOnly = true)
     public List<CatalogResponse> listCatalogs(String workspaceId) {
-        if (workspaceId == null || workspaceId.isBlank()) {
-            return catalogRepository.findAll().stream()
-                    .sorted((a, b) -> a.getName().compareToIgnoreCase(b.getName()))
-                    .map(catalogMapper::toResponse)
-                    .toList();
-        }
         return catalogRepository.findAllByWorkspaceIdOrderByNameAsc(workspaceId).stream()
                 .map(catalogMapper::toResponse)
                 .toList();
     }
 
     // ----- Items -----
-    @Override
     public CatalogItemResponse createItem(String catalogId, CatalogItemCreateRequest request) {
         Catalog catalog = catalogRepository.findById(catalogId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Catalog not found"));
@@ -120,7 +112,7 @@ public class CatalogServiceImpl implements CatalogService {
         return itemMapper.toResponse(createdItem);
     }
 
-    @Override
+    
     public CatalogItemResponse updateItem(String catalogId, String itemId, CatalogItemUpdateRequest request) {
         CatalogItem item = itemRepository.findByIdAndCatalog_Id(itemId, catalogId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Item not found in catalog"));
@@ -134,14 +126,14 @@ public class CatalogServiceImpl implements CatalogService {
         return itemMapper.toResponse(updatedItem);
     }
 
-    @Override
+    
     public void deleteItem(String catalogId, String itemId) {
         CatalogItem item = itemRepository.findByIdAndCatalog_Id(itemId, catalogId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Item not found in catalog"));
         itemRepository.delete(item);
     }
 
-    @Override
+    
     @Transactional(readOnly = true)
     public CatalogItemResponse getItem(String catalogId, String itemId) {
         CatalogItem item = itemRepository.findByIdAndCatalog_Id(itemId, catalogId)
@@ -149,7 +141,7 @@ public class CatalogServiceImpl implements CatalogService {
         return itemMapper.toResponse(item);
     }
 
-    @Override
+    
     @Transactional(readOnly = true)
     public List<CatalogItemResponse> listItems(String catalogId) {
         return itemRepository.findAllByCatalog_IdOrderByValue(catalogId).stream()

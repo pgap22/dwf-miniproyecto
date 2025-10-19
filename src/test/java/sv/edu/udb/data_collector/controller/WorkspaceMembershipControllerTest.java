@@ -78,7 +78,9 @@ class WorkspaceMembershipControllerTest {
     void invite_shouldReturnCreatedMember() throws Exception {
         // Arrange
         String workspaceId = "ws-1";
-        InviteMemberRequest request = new InviteMemberRequest("new@example.com");
+        var dto = new InviteMemberRequest();
+        dto.setEmail("new@example.com");
+        InviteMemberRequest request = new InviteMemberRequest();
         MemberResponse response = MemberResponse.builder().id("user-2").email("new@example.com").role(MemberRole.MEMBER).build();
 
         given(membershipService.invite(workspaceId, "new@example.com")).willReturn(response);
